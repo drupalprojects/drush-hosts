@@ -138,11 +138,16 @@ function hosting_dns_access($op, $node) {
  * Implementation of hook_provision_args
  * Used to pass along configuration details to the backend provisioning tasks
  **/
-function hosting_dns_provision_args($node, $task = '') {
-  $values = array();
-  if ($task == 'verify' || $task == 'install') {
-    $values['load-provision-dns'] = TRUE;
-    $values['load-provision-bind'] = TRUE;
+// function drush_hosting_db_server_pre_hosting_task($task) {
+//   $task =& drush_get_context('HOSTING_TASK');
+//   if ($task->ref->type == 'platform' && $task->task_type == 'verify') {
+//     $task->options['master_db'] = hosting_db_server_as_url(HOSTING_DEFAULT_DB_SERVER);
+//   }
+function drush_hosting_dns_pre_hosting_task($task) {
+  $task =& drush_get_context('HOSTING_TASK');
+  if ($task->ref->type == 'platform' && $task->task_type == 'verify') {
+    $task->options['load-provision-dns'] = TRUE;
+    $task->options['load-provision-bind'] = TRUE;
     if ($node->type == 'site') {
       $platform = node_load($node->platform);
       $dns = node_load($platform->dns_server);
@@ -151,26 +156,25 @@ function hosting_dns_provision_args($node, $task = '') {
       $dns = node_load($node->dns_server);
     }
 
-    $values['dns_id'] = $dns->nid;
-    # $values['dns_zone'] = 
-    $values['dns_ip'] = $dns->default_ip;
-    $values['dns_expire'] = $dns->expire;
-    $values['dns_retry'] = $dns->retry;
-    $values['dns_minimum'] = $dns->minimum;
-    $values['dns_ttl'] = $dns->ttl;
-    $values['dns_xfer'] = $dns->xfer;
-    $values['dns_email'] = $dns->email;
-    $values['dns_ns1'] = $dns->ns1;
-    $values['dns_ns2'] = $dns->ns2;
+    $task->options['dns_id'] = $dns->nid;
+    # $task->options['dns_zone'] = 
+    $task->options['dns_ip'] = $dns->default_ip;
+    $task->options['dns_expire'] = $dns->expire;
+    $task->options['dns_retry'] = $dns->retry;
+    $task->options['dns_minimum'] = $dns->minimum;
+    $task->options['dns_ttl'] = $dns->ttl;
+    $task->options['dns_xfer'] = $dns->xfer;
+    $task->options['dns_email'] = $dns->email;
+    $task->options['dns_ns1'] = $dns->ns1;
+    $task->options['dns_ns2'] = $dns->ns2;
 
     # Engine specific stuff..
-    $values['dns_zonedata'] = $dns->zonedata;
-    $values['dns_named_conf'] = $dns->named_conf;
-    $values['dns_named_checkconf'] = $dns->named_checkconf;
-    $values['dns_named_checkzone'] = $dns->named_checkzone;
-    $values['dns_named_rndc'] = $dns->named_rndc;
+    $task->options['dns_zonedata'] = $dns->zonedata;
+    $task->options['dns_named_conf'] = $dns->named_conf;
+    $task->options['dns_named_checkconf'] = $dns->named_checkconf;
+    $task->options['dns_named_checkzone'] = $dns->named_checkzone;
+    $task->options['dns_named_rndc'] = $dns->named_rndc;
   }
-  return $values;
 }
 
 /**
