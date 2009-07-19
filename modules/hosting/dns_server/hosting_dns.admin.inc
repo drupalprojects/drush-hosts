@@ -6,99 +6,84 @@
 /**
  * Implementation of hook_menu().
  **/
-function hosting_dns_menu($may_cache) {
-  if (!$may_cache) {
+function hosting_dns_menu() {
 # provide engine-specific settings here, depending on the types of the DNS nodes in the system..
-    $items[] = array(
-      'path' => 'admin/hosting/dns',
+    $items['admin/hosting/dns'] = array(
       'title' => t('DNS'),
       'description' => t('Manually administer DNS zones and records'),
-      'callback' => 'hosting_dns_admin',
-      'access' => user_access('administer DNS provisioning'),
+      'page callback' => 'hosting_dns_admin',
+      'access arguments' => array('administer DNS provisioning'),
       'type' => MENU_LOCAL_TASK
     );
-    $items[] = array(
-      'path' => 'admin/hosting/dns/list',
+    $items['admin/hosting/dns/list'] = array(
       'title' => t('List Zones'),
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => -1,
     );
-    $items[] = array(
-      'path' => 'admin/hosting/dns/configure',
+    $items['admin/hosting/dns/configure'] = array(
       'title' => t('Configure'),
       'type' => MENU_LOCAL_TASK,
       'description' => t('Configure DNS Provisioning'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => 'hosting_dns_settings',
-      'access' => user_access('administer DNS provisioning'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('hosting_dns_settings'),
+      'access arguments' => array('administer DNS provisioning'),
       'weight' => 10,
     );
 
 
-    $items[] = array(
-      'path' => 'admin/hosting/dns/add',
+    $items['admin/hosting/dns/add'] = array(
       'title' => t('Add Zone'),
       'description' => t('Add a new DNS zone (domain) to the system'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => 'hosting_dns_zone_form',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('hosting_dns_zone_form'),
       'type' => MENU_LOCAL_TASK,
     );
 
-    $zid = arg(3);
-    $items[] = array(
-      'path' => 'admin/hosting/dns/'. $zid .'/edit',
+    $items['admin/hosting/dns/%zid/edit'] = array(
       'title' => t('Edit Zone'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('hosting_dns_zone_form', $zid),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('hosting_dns_zone_form', 1),
       'type' => MENU_CALLBACK,
     );
-    $items[] = array(
-      'path' => 'admin/hosting/dns/'. $zid .'/delete',
+    $items['admin/hosting/dns/%zid/delete'] = array(
       'title' => t('Delete Zone'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('hosting_dns_zone_delete_confirm', $zid),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('hosting_dns_zone_delete_confirm', 1),
       'type' => MENU_CALLBACK,
     );
 
-    $rid = arg(5);
-    $items[] = array(
-      'path' => 'admin/hosting/dns/'. $zid .'/records',
+    $items['admin/hosting/dns/%zid/records'] = array(
       'title' => t('Zone Records'),
-      'callback' => 'hosting_dns_records',
-      'callback arguments' => $zid,
-      'access' => user_access('access administration pages'),
+      'page callback' => 'hosting_dns_records',
+      'page arguments' => array(1),
+      'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
-    $items[] = array(
-      'path' => 'admin/hosting/dns/'. $zid .'/records/list',
+    $items['admin/hosting/dns/%zid/records/list'] = array(
       'title' => t('List Zone Records'),
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => -10,
     );
-    $items[] = array(
-      'path' => 'admin/hosting/dns/' . $zid .'/records/add',
+    $items['admin/hosting/dns/%zid/records/add'] = array(
       'title' => t('Add Zone Record'),
       'description' => t('Add a new DNS zone record (subdomain) to the system'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('hosting_dns_record_form', $zid), 
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('hosting_dns_record_form', 1), 
       'type' => MENU_LOCAL_TASK,
     );
-    $items[] = array(
-      'path' => 'admin/hosting/dns/'. $zid .'/records/'. $rid . '/edit',
+    $items['admin/hosting/dns/%zid/records/%rid/edit'] = array(
       'title' => t('Edit Zone Record'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('hosting_dns_record_form', $zid, $rid),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('hosting_dns_record_form', 1, 2),
       'type' => MENU_CALLBACK,
     );
 
-    $items[] = array(
-      'path' => 'admin/hosting/dns/'. $zid .'/records/'. $rid . '/delete',
+    $items['admin/hosting/dns/%zid/records/%rid/delete'] = array(
       'title' => t('Delete Zone Record'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('hosting_dns_record_delete_confirm', $zid, $rid),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('hosting_dns_record_delete_confirm', 1, 2),
       'type' => MENU_CALLBACK,
     );
-  }
   return $items;
 }
 
