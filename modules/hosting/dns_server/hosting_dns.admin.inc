@@ -36,52 +36,59 @@ function hosting_dns_menu() {
       'description' => t('Add a new DNS zone (domain) to the system'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('hosting_dns_zone_form'),
+      'access arguments' => array('access administration pages'),
       'type' => MENU_LOCAL_TASK,
     );
 
-    $items['admin/hosting/dns/%zid/edit'] = array(
+    $items['admin/hosting/dns/%/edit'] = array(
       'title' => t('Edit Zone'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('hosting_dns_zone_form', 1),
+      'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
-    $items['admin/hosting/dns/%zid/delete'] = array(
+    $items['admin/hosting/dns/%/delete'] = array(
       'title' => t('Delete Zone'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('hosting_dns_zone_delete_confirm', 1),
+      'page arguments' => array('hosting_dns_zone_delete_confirm', 3),
+      'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
 
-    $items['admin/hosting/dns/%zid/records'] = array(
+    $items['admin/hosting/dns/%/records'] = array(
       'title' => t('Zone Records'),
       'page callback' => 'hosting_dns_records',
       'page arguments' => array(1),
       'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
-    $items['admin/hosting/dns/%zid/records/list'] = array(
+    $items['admin/hosting/dns/%/records/list'] = array(
       'title' => t('List Zone Records'),
       'type' => MENU_DEFAULT_LOCAL_TASK,
+      'access arguments' => array('access administration pages'),
       'weight' => -10,
     );
-    $items['admin/hosting/dns/%zid/records/add'] = array(
+    $items['admin/hosting/dns/%/records/add'] = array(
       'title' => t('Add Zone Record'),
       'description' => t('Add a new DNS zone record (subdomain) to the system'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('hosting_dns_record_form', 1), 
+      'access arguments' => array('access administration pages'),
       'type' => MENU_LOCAL_TASK,
     );
-    $items['admin/hosting/dns/%zid/records/%rid/edit'] = array(
+    $items['admin/hosting/dns/%/records/%/edit'] = array(
       'title' => t('Edit Zone Record'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('hosting_dns_record_form', 1, 2),
       'type' => MENU_CALLBACK,
+      'access arguments' => array('access administration pages'),
     );
 
-    $items['admin/hosting/dns/%zid/records/%rid/delete'] = array(
+    $items['admin/hosting/dns/%/records/%/delete'] = array(
       'title' => t('Delete Zone Record'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('hosting_dns_record_delete_confirm', 1, 2),
+      'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
   return $items;
@@ -216,19 +223,21 @@ function hosting_dns_zone_form_submit($form_id, $form_values) {
   return 'admin/hosting/dns';
 }
 
-function hosting_dns_zone_delete_confirm($zid) {
+function hosting_dns_zone_delete_confirm($form_state, $zid) {
   $name = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE zid = %d", $zid));
   $form['zid'] = array('#type' => 'value', '#value' => $zid);
-  $output = confirm_form($form, t('Are you sure you want to delete the zone "'. $name .'"?'), "admin/
-build/hosting_dns", "This action cannot be undone.", t('Delete'), t('Cancel'));
+  $output = confirm_form($form,t('Are you sure you want to delete the zone %name (%zid)?', array('%name' => $name, '%zid' => $zid)), "admin/hosting/dns", "This action cannot be undone.", t('Delete'), t('Cancel'));
   return $output;
 }
 
-function hosting_dns_zone_delete_confirm_submit($form_id, $form_values) {
-# remove zone from db (soa table)
-# schedule task to delete zone
-  #provision_dns_zone('delete', array('zid' => $form_values['zid']));
-  return 'admin/hosting/dns';
+function hosting_dns_zone_delete_confirm_submit($form, &$form_state) {
+  # remove zone from db (soa table)
+  # schedule task to delete zone
+  #XXX: this won't work: provision_dns_zone('delete', array('zid' => $form_values['zid']));
+  if (!hosting_dns_zone('delete', $form_state['values'])) {
+    drupal_set_message("cannot delete zone");
+  }
+  $form_state['redirect'] = 'admin/hosting/dns';
 }
 
 function hosting_dns_record_form($zid, $rid=0) {
