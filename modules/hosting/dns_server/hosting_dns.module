@@ -14,7 +14,7 @@ include_once(drupal_get_path('module', 'hosting_dns') . '/hosting_dns.admin.inc'
 include_once(drupal_get_path('module', 'hosting_dns') . '/hosting_dns.api.inc');
 
 function hosting_dns_init() {
-  define('HOSTING_DEFAULT_DNS_SERVER', variable_get('hosting_default_db_server', null));
+  define('HOSTING_DEFAULT_DNS_SERVER', variable_get('hosting_default_dns_server', null));
 }
 function hosting_dns_hosting_service() {
   return array("dns_server" => t("DNS Server"));
