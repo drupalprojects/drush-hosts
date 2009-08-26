@@ -43,7 +43,7 @@ function hosting_dns_menu() {
     $items['admin/hosting/dns/%/edit'] = array(
       'title' => t('Edit Zone'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('hosting_dns_zone_form', 1),
+      'page arguments' => array('hosting_dns_zone_form', 3),
       'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
@@ -58,7 +58,7 @@ function hosting_dns_menu() {
     $items['admin/hosting/dns/%/records'] = array(
       'title' => t('Zone Records'),
       'page callback' => 'hosting_dns_records',
-      'page arguments' => array(1),
+      'page arguments' => array(3),
       'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
@@ -72,14 +72,14 @@ function hosting_dns_menu() {
       'title' => t('Add Zone Record'),
       'description' => t('Add a new DNS zone record (subdomain) to the system'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('hosting_dns_record_form', 1), 
+      'page arguments' => array('hosting_dns_record_form', 3), 
       'access arguments' => array('access administration pages'),
       'type' => MENU_LOCAL_TASK,
     );
-    $items['admin/hosting/dns/%/records/%/edit'] = array(
+    $items['admin/hosting/dns/%/records/%'] = array(
       'title' => t('Edit Zone Record'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('hosting_dns_record_form', 1, 2),
+      'page arguments' => array('hosting_dns_record_form', 3, 5),
       'type' => MENU_CALLBACK,
       'access arguments' => array('access administration pages'),
     );
@@ -87,7 +87,7 @@ function hosting_dns_menu() {
     $items['admin/hosting/dns/%/records/%/delete'] = array(
       'title' => t('Delete Zone Record'),
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('hosting_dns_record_delete_confirm', 1, 2),
+      'page arguments' => array('hosting_dns_record_delete_confirm', 3, 5),
       'access arguments' => array('access administration pages'),
       'type' => MENU_CALLBACK,
     );
@@ -135,7 +135,9 @@ function hosting_dns_admin() {
 }
 
 function hosting_dns_records($zid) {
-  $zone = hosting_dns_status('zone', $zid);
+  if (!$zone = hosting_dns_status('zone', $zid)) {
+    drupal_set_message(t("Cannot load DNS zone %zid", array("%zid" => $zid)), "error");
+  }
   $record_count = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE zid=%d", $zid));
   $output = sprintf('The %s zone currently has %d records.', $zone->origin, $record_count);
   
@@ -148,8 +150,7 @@ function hosting_dns_records($zid) {
                         $row['type'],
                         $row['data'],
                         $row['aux'],
-                        l(t('edit'), "admin/hosting/dns/". $zid . "/records/". $row['rid'] . 
-"/edit"),
+                        l(t('edit'), "admin/hosting/dns/". $zid . "/records/". $row['rid']),
                         l(t('delete'), "admin/hosting/dns/". $zid . "/records/". $row['rid'] 
 . "/delete"),
                    );
@@ -158,7 +159,7 @@ function hosting_dns_records($zid) {
   return $output;
 }
 
-function hosting_dns_zone_form($zid=0) {
+function hosting_dns_zone_form($form_state, $zid = 0) {
   $fields = array('origin', 'ns1', 'ns2', 'mbox', 'serial', 'refresh', 'retry', 'expire', 'minimum', 
 'ttl', 'active', 'xfer');
   $titles = array(t('Domain Name'), t('Primary NS'), t('Secondary NS'), t('Admin Email'), t('Serial')
@@ -211,16 +212,16 @@ function hosting_dns_zone_form_validate($form_id, $form_values) {
 
 }
 
-function hosting_dns_zone_form_submit($form_id, $form_values) {
+function hosting_dns_zone_form_submit($form, &$form_state) {
 # update db (soa table)
-  if ($form_values['zid']) { # Update an existing zone
-    hosting_dns_zone('update', $form_values);   
+  if ($form_state['values']['zid']) { # Update an existing zone
+    hosting_dns_zone('update', $form_state['values']);   
 # schedule task
   } else {                   # Create a new zone
-    hosting_dns_zone('add', $form_values);
+    hosting_dns_zone('add', $form_state['values']);
 # schedule task
   } 
-  return 'admin/hosting/dns';
+  $form_state['redirect'] = 'admin/hosting/dns';
 }
 
 function hosting_dns_zone_delete_confirm($form_state, $zid) {
@@ -240,7 +241,7 @@ function hosting_dns_zone_delete_confirm_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/hosting/dns';
 }
 
-function hosting_dns_record_form($zid, $rid=0) {
+function hosting_dns_record_form($form_state, $zid, $rid=0) {
   $form = array();
   $form['zid'] = array('#type' => 'value', '#value' => $zid);
 
@@ -303,18 +304,18 @@ function hosting_dns_record_form_validate($form_id, $form_values) {
   # TODO: validate the form values!
 }
 
-function hosting_dns_record_form_submit($form_id, $form_values) {
-  if ($form_values['rid']) {  # Update an existing zone
-    hosting_dns_rr('update', $form_values['zid'], $form_values);
+function hosting_dns_record_form_submit($form, &$form_state) {
+  if ($form_state['values']['rid']) {  # Update an existing zone
+    hosting_dns_rr('update', $form_state['values']['zid'], $form_state['values']);
 # schedule a task to commit update
   } else {
-    hosting_dns_rr('add', $form_values['zid'], $form_values);
+    hosting_dns_rr('add', $form_state['values']['zid'], $form_state['values']);
 # schedule a task to commit update
   }
-  return 'admin/hosting/dns/'. $form_values['zid'] .'/records';
+  $form_state['redirect'] = 'admin/hosting/dns/'. $form_state['values']['zid'] .'/records';
 }
 
-function hosting_dns_record_delete_confirm($zid, $rid) {
+function hosting_dns_record_delete_confirm($form_state, $zid, $rid) {
   $origin = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE zid = %d", $zid));
   $name = db_result(db_query("SELECT name FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d", $zid,
  $rid));
@@ -327,8 +328,8 @@ function hosting_dns_record_delete_confirm($zid, $rid) {
   return $output;
 }
 
-function hosting_dns_record_delete_confirm_submit($form_id, $form_values) {
+function hosting_dns_record_delete_confirm_submit($form, &$form_state) {
   # Schedule task to delete the record?
-  # hosting_dns_rr('delete', $form_values['zid'], array('rid' => $form_values['rid']));
-  return 'admin/hosting/dns/'. $form_values['zid'] .'/records';
+  hosting_dns_rr('delete', $form_state['values']['zid'], array('rid' => $form_state['values']['rid']));
+  $form_state['redirect'] = 'admin/hosting/dns/'. $form_state['values']['zid'] .'/records';
 }
