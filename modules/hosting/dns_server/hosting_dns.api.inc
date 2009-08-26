@@ -249,6 +249,9 @@ function hosting_dns_zone($op, $args) {
       break;
     case 'delete':
       $zone = hosting_dns_status('zone', $args);
+      if (!$zone) {
+        return FALSE;
+      }
       module_invoke_all('hosting_dns_zone', 'delete', $zone);  # This will delete all the zone's records too
 
       db_query('DELETE FROM {hosting_dns_rr} WHERE zid = %d', $zone->zid);
