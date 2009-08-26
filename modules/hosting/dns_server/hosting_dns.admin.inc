@@ -234,7 +234,6 @@ function hosting_dns_zone_delete_confirm($form_state, $zid) {
 function hosting_dns_zone_delete_confirm_submit($form, &$form_state) {
   # remove zone from db (soa table)
   # schedule task to delete zone
-  #XXX: this won't work: provision_dns_zone('delete', array('zid' => $form_values['zid']));
   if (!hosting_dns_zone('delete', $form_state['values'])) {
     drupal_set_message("cannot delete zone");
   }
