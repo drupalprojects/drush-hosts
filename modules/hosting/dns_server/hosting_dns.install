@@ -1,56 +1,65 @@
 <?php
 // $Id: hosting_dns.install,v 1.7 2009/04/16 01:46:52 adrian Exp $
 
+/**
+ * Implementation of hook_schema().
+ */
+function hosting_dns_schema() {
+  $schema['hosting_dns_server'] = array(
+    'fields' => array(
+      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'engine' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE,),
+      'default_ip' => array('type' => 'text', 'size' => 'small', 'not null' => TRUE,),
+      'ns' => array('type' => 'text', 'size' => 'big', 'not null' => TRUE,),
+      'mbox' => array('type' => 'text', 'size' => 'big', 'not null' => TRUE,),
+      'refresh' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 7200,),
+      'retry' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 300,),
+      'expire' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 604800,),
+      'minimum' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 86400,),
+      'ttl' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 86400,),
+      'xfer' => array('type' => 'text', 'size' => 'big', 'not null' => TRUE,),
+    ),
+    'primary key' => array('vid'),
+  );
+
+  # This table is intended to keep track of "per-engine" configuration
+  # details, specific to the particular backend (BIND, myDNS, etc)
+  $schema['hosting_dns_server_config'] = array(
+    'fields' => array(
+      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'engine' => array('type' => 'text', 'size' => 'medium', 'not null' => TRUE,),
+      'data' => array('type' => 'text', 'size' => 'big', 'not null' => TRUE,),
+    ),
+    'primary key' => array('vid', 'engine'),
+  );
+  # This one is a join table against platform nodes, to track the DNS
+  # server nodes associated with them.
+  $schema['hosting_dns_platform'] = array(
+    'fields' => array(
+      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'dns_server' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+    ),
+    'primary key' => array('vid', 'engine'),
+  );
+
+  // The hosting_dns_server_zone table maps DNS server nodes onto zone IDs
+  $schema['hosting_dns_server_zone'] = array(
+    'fields' => array(
+      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'rid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+    ),
+    'primary key' => array('vid', 'zid'),
+  );
+  return $schema;
+}
+
 function hosting_dns_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      # This one keeps track of the dns_server node's fields
-      db_query("CREATE TABLE {hosting_dns_server} (
-        vid int(10) unsigned NOT NULL,
-        nid int(10) unsigned NOT NULL default '0',
-        engine char(128)NOT NULL, 
-        default_ip char(15) NOT NULL,
-        ns text NOT NULL,
-        mbox char(255) NOT NULL,
-        refresh int(10) unsigned NOT NULL default '7200',
-        retry int(10) unsigned NOT NULL default '300',
-        expire int(10) unsigned NOT NULL default '604800',
-        minimum int(10) unsigned NOT NULL default '86400',
-        ttl int(10) unsigned NOT NULL default '86400',
-        xfer CHAR(255) NOT NULL,
-        PRIMARY KEY  (vid)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-
-      # This table is intended to keep track of "per-engine" configuration
-      # details, specific to the particular backend (BIND, myDNS, etc)
-      db_query("CREATE TABLE {hosting_dns_server_config} (
-        vid int(10) unsigned NOT NULL,
-        nid int(10) unsigned NOT NULL default '0',
-        engine char(128) NOT NULL,
-        data longtext NOT NULL default '',
-        PRIMARY KEY (vid,engine)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-
-      # This one is a join table against platform nodes, to track the DNS
-      # server nodes associated with them.
-      db_query("CREATE TABLE {hosting_dns_platform} (
-       vid int(10) unsigned NOT NULL default '0',
-       nid int(10) unsigned NOT NULL default '0',
-       dns_server int(10) unsigned NOT NULL default '0',
-       key (vid, dns_server) 
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-
-      // The hosting_dns_server_zone table maps DNS server nodes onto zone IDs
-      db_query("CREATE TABLE {hosting_dns_server_zone} (
-        vid int NOT NULL DEFAULT '0',
-        nid int(10) unsigned NOT NULL DEFAULT '0',
-        zid int(10) unsigned NOT NULL DEFAULT '0',
-        rid int(10) unsigned NOT NULL DEFAULT '0',
-        KEY (vid, zid)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-
-      // The provision_dns_soa table defines zones
+  // TODO: port this to the schema API
       db_query("CREATE TABLE {hosting_dns_soa} (
         zid int(10) NOT NULL auto_increment,
         origin char(255) NOT NULL,
@@ -82,7 +91,8 @@ function hosting_dns_install() {
         PRIMARY KEY (rid),
         UNIQUE KEY rr (zid,name,type,data)
       ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-  }
+
+  drupal_install_schema('hosting_dns');
 }
 
 function hosting_dns_uninstall() {
