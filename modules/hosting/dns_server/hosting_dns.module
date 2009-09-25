@@ -80,7 +80,7 @@ function hosting_dns_menu() {
       'page callback' => 'hosting_dns_records',
       'page arguments' => array(1),
       'access arguments' => array('access administration pages'),
-      'type' => MENU_CALLBACK,
+      'type' => MENU_LOCAL_TASK,
     );
 
     $items['node/%node/delete'] = array(
@@ -507,6 +507,11 @@ function hosting_dns_insert($node) {
     break;
   case 'zone':
     drupal_write_record('hosting_dns_soa', $node);
+    module_invoke_all("hosting_dns_zone", 'add', $node);
+    if (isset($args['dns_id'])) { $dns = node_load($args['dns_id']); }
+    if ($dns) {  # Add a default A record for the origin
+      hosting_dns_rr('add', $node, array('name' => '@', 'type' => 'A', 'data' => $dns->default_ip));
+    }
     break;
   }
 }
@@ -541,6 +546,8 @@ function hosting_dns_update($node) {
   }
     break;
   case 'zone':
+    drupal_write_record('hosting_dns_soa', $node, 'nid');
+    module_invoke_all("hosting_dns_zone", 'update', $node);
     break;
   }
 }
