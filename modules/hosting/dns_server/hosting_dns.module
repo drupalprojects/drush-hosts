@@ -134,44 +134,6 @@ function hosting_dns_access($op, $node) {
   }
 }
 
-/** 
- * Implementation of hook_provision_args
- * Used to pass along configuration details to the backend provisioning tasks
- **/
-function drush_hosting_dns_pre_hosting_task($task) {
-  $task =& drush_get_context('HOSTING_TASK');
-  if ($task->ref->type == 'platform' && $task->task_type == 'verify') {
-    $task->options['load-provision-dns'] = TRUE;
-    $task->options['load-provision-bind'] = TRUE;
-    if ($node->type == 'site') {
-      $platform = node_load($node->platform);
-      $dns = node_load($platform->dns_server);
-# Load zone/RR info here as well..
-    } elseif ($node->type == 'platform') {
-      $dns = node_load($node->dns_server);
-    }
-
-    $task->options['dns_id'] = $dns->nid;
-    # $task->options['dns_zone'] = 
-    $task->options['dns_ip'] = $dns->default_ip;
-    $task->options['dns_expire'] = $dns->expire;
-    $task->options['dns_retry'] = $dns->retry;
-    $task->options['dns_minimum'] = $dns->minimum;
-    $task->options['dns_ttl'] = $dns->ttl;
-    $task->options['dns_xfer'] = $dns->xfer;
-    $task->options['dns_email'] = $dns->email;
-    $task->options['dns_ns1'] = $dns->ns1;
-    $task->options['dns_ns2'] = $dns->ns2;
-
-    # Engine specific stuff..
-    $task->options['dns_zonedata'] = $dns->zonedata;
-    $task->options['dns_named_conf'] = $dns->named_conf;
-    $task->options['dns_named_checkconf'] = $dns->named_checkconf;
-    $task->options['dns_named_checkzone'] = $dns->named_checkzone;
-    $task->options['dns_named_rndc'] = $dns->named_rndc;
-  }
-}
-
 /**
  * Small helper function to get DNS servers.
 */ 
