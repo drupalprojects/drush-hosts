@@ -39,9 +39,9 @@ function hosting_dns_schema() {
   $schema['hosting_dns_server_zone'] = array(
     'fields' => array(
       'sid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('nid of the dns server node')),
-      'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('nid of the zone node')),
+      'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('nid of the zone node')),
     ),
-    'primary key' => array('sid', 'zid'),
+    'primary key' => array('sid', 'nid'),
   );
 
   $schema['hosting_dns_soa'] = array(

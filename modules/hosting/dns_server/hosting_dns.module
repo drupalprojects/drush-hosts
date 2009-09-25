@@ -768,7 +768,7 @@ function hosting_dns_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         # create the zone, if necessary
         # add the RR
         # create the node association:
-        #db_query("INSERT INTO {hosting_dns_server_zone} (vid,nid,zid,rid)" 
+        #db_query("INSERT INTO {hosting_dns_server_zone} (vid,nid,nid,rid)" 
         # should also track the site node ID mapped to the zone/record id..
 drupal_set_message("site node inserted: creating zone/RR records for ".$node->title);
         hosting_dns_site_insert($node);
@@ -795,9 +795,9 @@ drupal_set_message("site node inserted: creating zone/RR records for ".$node->ti
         if (user_access('administer DNS provisioning')) {
 drupal_set_message("loading DNS info for site: ".$node->title);
           $data = _hosting_dns_split_url($node->title);
-          $zid = _hosting_dns_get_zid($data['zone']);
-          $additions['zone'] = hosting_dns_status('zone', array('zid' => $zid));
-          $additions['rr'] = hosting_dns_status('rr', array('zid' => $zid, 'name' => $data['host'], 'type' => 'A'));
+          $nid = _hosting_dns_get_nid($data['zone']);
+          $additions['zone'] = hosting_dns_status('zone', array('nid' => $nid));
+          $additions['rr'] = hosting_dns_status('rr', array('nid' => $nid, 'name' => $data['host'], 'type' => 'A'));
           return $additions;
         }
         break;
@@ -809,7 +809,7 @@ drupal_set_message("loading DNS info for site: ".$node->title);
             '#type' => 'item',
             '#title' => t('Zone'),
             '#weight' => 21,
-            '#value' => $node->zone->origin . " (zid:".$node->zone->zid.")",
+            '#value' => $node->zone->origin . " (nid:".$node->zone->nid.")",
           );
           $node->content['info']['record'] = array(
             '#type' => 'item',

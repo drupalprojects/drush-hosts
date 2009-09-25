@@ -10,7 +10,7 @@ function hosting_dns_admin() {
   $header = array('Name', 'Serial', 'Records', 'Active',  array('data' => t('Operations'), 'colspan' => 3));
   $result = db_query("SELECT z.nid, z.origin, z.serial, n.status FROM {hosting_dns_soa} z JOIN {node} n ON n.nid = z.nid ORDER BY origin");
   while ($row = db_fetch_array($result)) {
-    $records = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE nid = %d", $row['zid']));
+    $records = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE nid = %d", $row['nid']));
     $rows[] = array(l(t($row['origin']), "node/". $row['nid']),
                         $row['serial'],
                         $records,
@@ -25,21 +25,21 @@ function hosting_dns_admin() {
 }
 
 function hosting_dns_records($node) {
-  $zid = $node->nid;
-  $record_count = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE nid=%d", $zid));
+  $nid = $node->nid;
+  $record_count = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE nid=%d", $nid));
   $output = sprintf('The %s zone currently has %d records.', $zone->origin, $record_count);
   
   $header = array('Name', 'Type', 'Data', 'AUX', array('data' => t('Operations'), 'colspan' => 2));
   $result = db_query("SELECT rid, name, type, data, aux FROM {hosting_dns_rr} WHERE nid=%d ORDER BY
- name", $zid);
+ name", $nid);
   while ($row = db_fetch_array($result)) {
-    $rows[] = array(l(t($row['name']), "node/". $zid . "/records/" . $row['rid']
+    $rows[] = array(l(t($row['name']), "node/". $nid . "/records/" . $row['rid']
 ),
                         $row['type'],
                         $row['data'],
                         $row['aux'],
-                        l(t('edit'), "node/". $zid . "/records/". $row['rid']),
-                        l(t('delete'), "node/". $zid . "/records/". $row['rid'] 
+                        l(t('edit'), "node/". $nid . "/records/". $row['rid']),
+                        l(t('delete'), "node/". $nid . "/records/". $row['rid'] 
 . "/delete"),
                    );
   }
@@ -47,10 +47,10 @@ function hosting_dns_records($node) {
   return $output;
 }
 
-function hosting_dns_zone_delete_confirm($form_state, $zid) {
-  $name = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE zid = %d", $zid));
-  $form['zid'] = array('#type' => 'value', '#value' => $zid);
-  $output = confirm_form($form,t('Are you sure you want to delete the zone %name (%zid)?', array('%name' => $name, '%zid' => $zid)), "admin/hosting/dns", "This action cannot be undone.", t('Delete'), t('Cancel'));
+function hosting_dns_zone_delete_confirm($form_state, $nid) {
+  $name = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE nid = %d", $nid));
+  $form['nid'] = array('#type' => 'value', '#value' => $nid);
+  $output = confirm_form($form,t('Are you sure you want to delete the zone %name (%nid)?', array('%name' => $name, '%nid' => $nid)), "admin/hosting/dns", "This action cannot be undone.", t('Delete'), t('Cancel'));
   return $output;
 }
 
@@ -140,21 +140,21 @@ function hosting_dns_record_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'node/'. $form_state['values']['nid'] .'/records';
 }
 
-function hosting_dns_record_delete_confirm($form_state, $zid, $rid) {
-  $origin = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE zid = %d", $zid));
-  $name = db_result(db_query("SELECT name FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d", $zid,
+function hosting_dns_record_delete_confirm($form_state, $nid, $rid) {
+  $origin = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE nid = %d", $nid));
+  $name = db_result(db_query("SELECT name FROM {hosting_dns_rr} WHERE nid = %d AND rid = %d", $nid,
  $rid));
 
-  $form['zid'] = array('#type' => 'value', '#value' => $zid);
+  $form['nid'] = array('#type' => 'value', '#value' => $nid);
   $form['rid'] = array('#type' => 'value', '#value' => $rid);
   $output = confirm_form($form, t('Are you sure you want to delete the zone record "'. $name .'" from
- the ' . $origin . ' zone?'), "node/". $zid . "/records", "This action cannot be
+ the ' . $origin . ' zone?'), "node/". $nid . "/records", "This action cannot be
  undone.", t('Delete'), t('Cancel'));
   return $output;
 }
 
 function hosting_dns_record_delete_confirm_submit($form, &$form_state) {
   # Schedule task to delete the record?
-  hosting_dns_rr('delete', $form_state['values']['zid'], array('rid' => $form_state['values']['rid']));
-  $form_state['redirect'] = 'node/'. $form_state['values']['zid'] .'/records';
+  hosting_dns_rr('delete', $form_state['values']['nid'], array('rid' => $form_state['values']['rid']));
+  $form_state['redirect'] = 'node/'. $form_state['values']['nid'] .'/records';
 }
