@@ -435,25 +435,21 @@ function hosting_dns_form(&$node) {
     }
     break;
   case 'zone':
-    $fields = array('origin', 'mbox', 'serial', 'refresh', 'retry', 'expire', 'minimum', 
-        'ttl', 'xfer');
-    $titles = array(t('Domain Name'), t('Admin Email'), t('Serial')
-        , t('Refresh'), t('Retry'), t('Expire'), t('Minimum TTL'), t('TTL'), t('XFER Access'));
-
+    $fields = hosting_dns_zone_fields();
     if (!$node->nid) {
       # create a 'default' zone object, with all the right fields set to defaults..
       $node = new stdClass();
-      foreach ($fields as $key) {
-        $node->$key = variable_get('hosting_dns_'.$key,NULL);
+      foreach ($fields as $field => $title) {
+        $node->$field = variable_get('hosting_dns_'.$field,NULL);
       }
       $node->serial = date('Ymd') . '01';
     }
 
-    foreach ($fields as $i => $key) {
-      $form[$key] = array(
+    foreach ($fields as $field => $title) {
+      $form[$field] = array(
           '#type' => 'textfield',
-          '#title' => $titles[$i],
-          '#default_value' => $node->$key,
+          '#title' => $title,
+          '#default_value' => $node->$field,
           );
     }
 
@@ -610,9 +606,9 @@ function hosting_dns_load($node) {
  * Implementation of hook_view().
  */
 function hosting_dns_view($node, $teaser = FALSE, $page = FALSE) {
+  $node = node_prepare($node, $teaser);
   switch ($node->type) { 
   case 'dns_server':
-    $node = node_prepare($node, $teaser);
 
     $node->content['engine'] = array(
       '#type' => 'fieldset',
@@ -713,12 +709,21 @@ function hosting_dns_view($node, $teaser = FALSE, $page = FALSE) {
   #  );
      break;
   case 'zone':
-     # TODO
-     $node->content['info']['#value'] = var_export($node, TRUE);
-     break;
+    $node->content['zone'] = array(
+     '#type' => 'fieldset',
+     '#title' => t('Zone details'),
+    );
+    foreach (hosting_dns_zone_fields() as $field => $title) {
+      $node->content['zone'][$field] = array('#type' => 'item', '#title' => $title, '#value' => $node->$field);
+    }
+    break;
   }
    
   return $node;
+}
+
+function hosting_dns_zone_fields() {
+  return array('origin' => t('Origin'), 'mbox' => t('Admin Email'), 'serial' => t('Serial'), 'refresh' => t('Refresh'), 'retry' => t('Retry'), 'expire' => t('Expire'), 'minimum' => t('Minimum TTL'), 'ttl' => t('Default TTL'), 'xfer' => t('XFER Access list'));
 }
 
 /**
