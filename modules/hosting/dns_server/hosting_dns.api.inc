@@ -308,7 +308,7 @@ function hosting_dns_rr($op, $zone, $args) {
       return $record;
       break;
     case 'update':
-      $record = $zone->records[$args['rid']];
+      $record = (object) $zone->records[$args['rid']];
       
       $keys = array();
       foreach ($fields as $field) {
@@ -335,7 +335,7 @@ function hosting_dns_rr($op, $zone, $args) {
       return $record;
       break;
     case 'delete':
-      $record = hosting_dns_status('rr', array('nid' => $zone->nid, 'rid' => $args['rid']));
+      $record = (object) $zone->records[$args['rid']];
       module_invoke_all('hosting_dns_rr', 'delete', $zone, $record);
 
       db_query('DELETE FROM {hosting_dns_rr} WHERE nid = %d AND rid = %d', $zone->nid, $record->rid);

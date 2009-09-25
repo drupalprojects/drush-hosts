@@ -140,7 +140,11 @@ function hosting_dns_record_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'node/'. $form_state['values']['nid'] .'/records';
 }
 
-function hosting_dns_record_delete_confirm($form_state, $nid, $rid) {
+function hosting_dns_record_delete_confirm($form_state, $node, $rid) {
+  if (!is_object($node)) {
+    $node = node_load($node);
+  }
+  $nid = $node->nid;
   $origin = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE nid = %d", $nid));
   $name = db_result(db_query("SELECT name FROM {hosting_dns_rr} WHERE nid = %d AND rid = %d", $nid,
  $rid));
