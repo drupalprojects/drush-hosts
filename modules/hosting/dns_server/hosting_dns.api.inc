@@ -18,6 +18,7 @@
  **/
 function hosting_dns_status($op, $args) {
 
+  drupal_set_message(t("Deprecated, remove the call to this function and use the node object instead"));
   if (!isset($args['zid']) && isset($args['domain'])) {
     # TODO: error-check this!
     $args['zid'] = _hosting_dns_get_zid($args['domain']);
@@ -26,15 +27,15 @@ function hosting_dns_status($op, $args) {
   switch ($op) {
     case 'zone':
       // return zone SOA info if it exists
-      $result = db_query("SELECT * FROM {hosting_dns_soa} WHERE zid = %d", $args['zid']);
+      $result = db_query("SELECT * FROM {hosting_dns_soa} WHERE nid = %d", $args['zid']);
       $object = db_fetch_object($result);
       break;
     case 'rr':
       // return RR details, if it exists
       if (isset($args['rid'])) {
-        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d", $args['zid'], $args['rid']);
+        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE nid = %d AND rid = %d", $args['zid'], $args['rid']);
       } else {
-        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d AND name = '%s' AND type = '%s'", $args['zid'], $args['name'], $args['type']);
+        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE nid = %d AND name = '%s' AND type = '%s'", $args['zid'], $args['name'], $args['type']);
       }
       $object = db_fetch_object($result);
       break;
@@ -279,7 +280,7 @@ function hosting_dns_zone($op, $args) {
 function hosting_dns_rr($op, $zone, $args) {
   $fields = array('name', 'type', 'data', 'aux', 'ttl');
   if (is_numeric($zone)) {
-    $zone = hosting_dns_status('zone', array('zid' => $zone));
+    $zone = node_load($zone);
   }
   if (!is_object($zone)) {
     return FALSE;  # Error, the zone doesn't seem to exist!
@@ -288,22 +289,26 @@ function hosting_dns_rr($op, $zone, $args) {
   // do whatever DB setup is necessary, then call hook_dns_rr($op, $args)
   switch ($op) {
     case 'add':
-      if ($rr = hosting_dns_status('rr', array_merge(array('zid' => $zone->zid), $args))) {
-	// RR already exists
-	return $rr;
-      } 
+      if ($args['rid'] && !empty($zone->records[$args['rid']])) {
+        return $zone->records[$args['rid']];
+      }
+      else {
+        foreach ($zone->records as $rid => $record) {
+          if ($record['name'] == $args['name'] && $record['type'] == $args['type']) {
+            return $record;
+          }
+        }
+      }
       if (!isset($args['name']) || !isset($args['type']) || !isset($args['data'])) {  # Not enough info
 	return FALSE;
       } 
-      $sql = sprintf("INSERT INTO {hosting_dns_rr} (zid, name, type, data, aux, ttl) VALUES (%d, '%s', '%s', '%s', %d, %d)", $zone->zid, $args['name'], $args['type'], $args['data'], $args['aux'], $args['ttl']);
-      db_query($sql);
-      $record = hosting_dns_status('rr', array('zid' => $zone->zid, 'name' => $args['name'], 'type' => $args['type']));
-      module_invoke_all('hosting_dns_rr', $op, $zone, $record);
+      db_query("INSERT INTO {hosting_dns_rr} (nid, name, type, data, aux, ttl) VALUES (%d, '%s', '%s', '%s', %d, %d)", $zone->nid, $args['name'], $args['type'], $args['data'], $args['aux'], $args['ttl']);
+      module_invoke_all('hosting_dns_rr', $op, $zone, $args);
       hosting_dns_zone('update', array('zid' => $zone->zid, 'serial' => _hosting_dns_increment_serial($zone->serial)));
       return $record;
       break;
     case 'update':
-      $record = hosting_dns_status('rr', array('zid' => $zone->zid, 'rid' => $args['rid']));
+      $record = $zone->records[$args['rid']];
       
       $keys = array();
       foreach ($fields as $field) {
@@ -318,12 +323,12 @@ function hosting_dns_rr($op, $zone, $args) {
           }
         }
       }
-      $values[] = $zone->zid;
+      $values[] = $zone->nid;
       $values[] = $args['rid'];
 
       if (!empty($keys)) {
-	$sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE zid=%d AND rid=%d";
-	db_query($sql, $values);
+        $sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE nid=%d AND rid=%d";
+        db_query($sql, $values);
       }
       module_invoke_all('hosting_dns_rr', $op, $zone, $record);
       hosting_dns_zone('update', array('zid' => $zone->zid, 'serial' => _hosting_dns_increment_serial($zone->serial)));
