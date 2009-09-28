@@ -242,7 +242,7 @@ function hosting_dns_rr($op, $zone, $args) {
       $values[] = $args['rid'];
 
       if (!empty($keys)) {
-        $sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE zone=%d AND rid=%d";
+        $sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE zone=%d AND id=%d";
         db_query($sql, $values);
       }
       module_invoke_all('hosting_dns_rr', $op, $zone, $record);
