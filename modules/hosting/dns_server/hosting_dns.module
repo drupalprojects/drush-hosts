@@ -502,6 +502,7 @@ function hosting_dns_insert($node) {
    } # other engines will use this differently
     break;
   case 'zone':
+    $node->id = $node->nid;
     drupal_write_record('hosting_dns_soa', $node);
     module_invoke_all("hosting_dns_zone", 'add', $node);
     if (isset($args['dns_id'])) { $dns = node_load($args['dns_id']); }
@@ -542,7 +543,7 @@ function hosting_dns_update($node) {
   }
     break;
   case 'zone':
-    drupal_write_record('hosting_dns_soa', $node, 'zid');
+    drupal_write_record('hosting_dns_soa', $node, 'id');
     module_invoke_all("hosting_dns_zone", 'update', $node);
     break;
   }
@@ -592,7 +593,7 @@ function hosting_dns_load($node) {
   case 'zone':
     $additions = db_fetch_object(db_query('SELECT origin, mbox, serial, refresh, retry, expire, minimum, ttl, xfer FROM {hosting_dns_soa} WHERE vid = %d', $node->vid));
     $records = array();
-    $q = db_query('SELECT rid,name,type,data,aux,ttl FROM {hosting_dns_rr} WHERE zid = %d', $node->nid);
+    $q = db_query('SELECT id AS rid,name,type,data,aux,ttl FROM {hosting_dns_rr} WHERE zone = %d', $node->nid);
     while ($record = db_fetch_array($q)) {
       $records[$record['rid']] = $record;
     }
