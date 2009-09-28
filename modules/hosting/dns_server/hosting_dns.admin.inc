@@ -8,9 +8,9 @@ function hosting_dns_admin() {
   $output .= 'Aegir is managing '. $zone_count . ' zones.';
 
   $header = array('Name', 'Serial', 'Records', 'Active',  array('data' => t('Operations'), 'colspan' => 3));
-  $result = db_query("SELECT z.zid, z.origin, z.serial, n.status FROM {hosting_dns_soa} z JOIN {node} n ON n.nid = z.zid ORDER BY origin");
+  $result = db_query("SELECT z.id as zid, z.origin, z.serial, n.status FROM {hosting_dns_soa} z JOIN {node} n ON n.nid = z.id ORDER BY origin");
   while ($row = db_fetch_array($result)) {
-    $records = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE zid = %d", $row['zid']));
+    $records = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE zone = %d", $row['zid']));
     $rows[] = array(l(t($row['origin']), "node/". $row['zid']),
                         $row['serial'],
                         $records,
@@ -26,11 +26,11 @@ function hosting_dns_admin() {
 
 function hosting_dns_records($node) {
   $zid = $node->nid;
-  $record_count = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE zid=%d", $zid));
+  $record_count = db_result(db_query("SELECT COUNT(*) FROM {hosting_dns_rr} WHERE zone=%d", $zid));
   $output = sprintf('The %s zone currently has %d records.', $zone->origin, $record_count);
   
   $header = array('Name', 'Type', 'Data', 'AUX', array('data' => t('Operations'), 'colspan' => 2));
-  $result = db_query("SELECT rid, name, type, data, aux FROM {hosting_dns_rr} WHERE zid=%d ORDER BY
+  $result = db_query("SELECT id AS rid, name, type, data, aux FROM {hosting_dns_rr} WHERE zone=%d ORDER BY
  name", $zid);
   while ($row = db_fetch_array($result)) {
     $rows[] = array(l(t($row['name']), "node/". $zid . "/records/" . $row['rid']
@@ -47,8 +47,12 @@ function hosting_dns_records($node) {
   return $output;
 }
 
-function hosting_dns_zone_delete_confirm($form_state, $zid) {
-  $name = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE zid = %d", $zid));
+function hosting_dns_zone_delete_confirm($form_state, $zone) {
+  if (!is_object($zone)) {
+    $zone = node_load($zone);
+  }
+  $zid = $zone->nid;
+  $name = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE id = %d", $zid));
   $form['zid'] = array('#type' => 'value', '#value' => $zid);
   $output = confirm_form($form,t('Are you sure you want to delete the zone %name (%zid)?', array('%name' => $name, '%zid' => $zid)), "admin/hosting/dns", "This action cannot be undone.", t('Delete'), t('Cancel'));
   return $output;
@@ -145,8 +149,8 @@ function hosting_dns_record_delete_confirm($form_state, $node, $rid) {
     $node = node_load($node);
   }
   $zid = $node->nid;
-  $origin = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE zid = %d", $zid));
-  $name = db_result(db_query("SELECT name FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d", $zid,
+  $origin = db_result(db_query("SELECT origin FROM {hosting_dns_soa} WHERE id = %d", $zid));
+  $name = db_result(db_query("SELECT name FROM {hosting_dns_rr} WHERE zone = %d AND id = %d", $zid,
  $rid));
 
   $form['zid'] = array('#type' => 'value', '#value' => $zid);
