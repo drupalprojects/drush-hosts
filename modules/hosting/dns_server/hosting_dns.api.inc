@@ -314,8 +314,9 @@ function _hosting_dns_split_url($url) {
  * Helper function to get the zid for a given zone
  *
  * @param $origin
- *   The name (or origin) of the zone/domain **/
+ *   The name (or origin) of the zone/domain
+ **/
 function _hosting_dns_get_zid($origin) {
-  return db_result(db_query("SELECT zid FROM {hosting_dns_soa} WHERE origin LIKE '%%%s%%'", $origin));
+  return db_result(db_query('SELECT zid FROM {hosting_dns_soa} WHERE origin LIKE "%%%s%%"', $origin));
 }   
 
