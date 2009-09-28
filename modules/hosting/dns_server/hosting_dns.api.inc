@@ -15,7 +15,7 @@
  *
  * @return
  *   An object representing the zone or Resource Record, depending on $op.
- **/
+ */
 function hosting_dns_status($op, $args) {
 
   drupal_set_message(t("Deprecated, remove the call to this function and use the node object instead"));
@@ -27,15 +27,15 @@ function hosting_dns_status($op, $args) {
   switch ($op) {
     case 'zone':
       // return zone SOA info if it exists
-      $result = db_query("SELECT * FROM {hosting_dns_soa} WHERE zid = %d", $args['zid']);
+      $result = db_query("SELECT * FROM {hosting_dns_soa} WHERE id = %d", $args['zid']);
       $object = db_fetch_object($result);
       break;
     case 'rr':
       // return RR details, if it exists
       if (isset($args['rid'])) {
-        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d", $args['zid'], $args['rid']);
+        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zone = %d AND id = %d", $args['zid'], $args['rid']);
       } else {
-        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d AND name = '%s' AND type = '%s'", $args['zid'], $args['name'], $args['type']);
+        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zone = %d AND name = '%s' AND type = '%s'", $args['zid'], $args['name'], $args['type']);
       }
       $object = db_fetch_object($result);
       break;
@@ -55,10 +55,10 @@ function hosting_dns_status($op, $args) {
  *
  * @return
  *   An array of record objects, or a count of how many records the zone contains (if $num == TRUE).
- **/
+ */
 function hosting_dns_getrecords($zid, $num = FALSE) {
   $records = array();
-  $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d", $zid);
+  $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zone = %d", $zid);
   while ($rec = db_fetch_object($result)) {
     $records[$rec->rid] = $rec;
   }
@@ -81,7 +81,7 @@ function hosting_dns_getrecords($zid, $num = FALSE) {
  *
  * @return
  *   The zone object, whether newly created, or already existing.
- **/
+ */
 function hosting_dns_create_zone($domain, $dns) {
   # call _hosting_dns_zone and _hosting_dns_rr as needed
 drupal_set_message("called hosting_dns_create_zone: ".$domain);
@@ -124,7 +124,7 @@ ob_end_clean();
  *
  * @return
  *   The record object, or FALSE if the record could not be created.
- **/
+ */
 function hosting_dns_create_record($host, $zone, $data) {
   # provision_log("notice", t("Creating %type record for url @url", array('%type' => $data['type'], '@url' => $host)));
   $rec['name'] = $host;
@@ -139,7 +139,7 @@ function hosting_dns_create_record($host, $zone, $data) {
  *
  * @param $url
  *   The URL to remove. The zone and RR will be extracted from this and removed via the API.
- **/
+ */
 function hosting_dns_site_delete($url) {
   $url_parts = _hosting_dns_split_url($url);
 
@@ -171,7 +171,7 @@ function hosting_dns_site_delete($url) {
  *
  * @return
  *   For the 'add' and 'update' $ops, returns the zone object.
- **/
+ */
 function hosting_dns_zone($op, $args) {
   drupal_set_message('hosting_dns_zone is deprecated, remove the call to this function');
   module_invoke_all("hosting_dns_zone", $op, $args);
@@ -191,7 +191,7 @@ function hosting_dns_zone($op, $args) {
  *
  * @return
  *   For the 'add' and 'update' $ops, return the record object.
- **/
+ */
 function hosting_dns_rr($op, $zone, $args) {
   $fields = array('name', 'type', 'data', 'aux', 'ttl');
   if (is_numeric($zone)) {
@@ -217,7 +217,7 @@ function hosting_dns_rr($op, $zone, $args) {
       if (!isset($args['name']) || !isset($args['type']) || !isset($args['data'])) {  # Not enough info
 	return FALSE;
       } 
-      db_query("INSERT INTO {hosting_dns_rr} (zid, name, type, data, aux, ttl) VALUES (%d, '%s', '%s', '%s', %d, %d)", $zone->nid, $args['name'], $args['type'], $args['data'], $args['aux'], $args['ttl']);
+      db_query("INSERT INTO {hosting_dns_rr} (zone, name, type, data, aux, ttl) VALUES (%d, '%s', '%s', '%s', %d, %d)", $zone->nid, $args['name'], $args['type'], $args['data'], $args['aux'], $args['ttl']);
       module_invoke_all('hosting_dns_rr', $op, $zone, $args);
       hosting_dns_zone('update', array('zid' => $zone->nid, 'serial' => _hosting_dns_increment_serial($zone->serial)));
       return $record;
@@ -242,7 +242,7 @@ function hosting_dns_rr($op, $zone, $args) {
       $values[] = $args['rid'];
 
       if (!empty($keys)) {
-        $sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE zid=%d AND rid=%d";
+        $sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE zone=%d AND rid=%d";
         db_query($sql, $values);
       }
       module_invoke_all('hosting_dns_rr', $op, $zone, $record);
@@ -253,7 +253,7 @@ function hosting_dns_rr($op, $zone, $args) {
       $record = (object) $zone->records[$args['rid']];
       module_invoke_all('hosting_dns_rr', 'delete', $zone, $record);
 
-      db_query('DELETE FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d', $zone->nid, $record->rid);
+      db_query('DELETE FROM {hosting_dns_rr} WHERE zone = %d AND id = %d', $zone->nid, $record->rid);
       break;
   }
 
@@ -267,7 +267,7 @@ function hosting_dns_rr($op, $zone, $args) {
  * 
  * @return
  *    The serial, incremented based on current date and index
- **/
+ */
 function _hosting_dns_increment_serial($serial) {
   $date = substr($serial, 0, 8); # Get the YYYYMMDD part
   $index = substr($serial, 8, 2); # Get the index part
@@ -288,7 +288,7 @@ function _hosting_dns_increment_serial($serial) {
  *  sub.domain.tld
  *  www.sub.domain.tld
  *  sub.multi.domain.tld (domain has multiple parts before TLD, but after host?)
- **/
+ */
 function _hosting_dns_split_url($url) {
   $tlds = split("\n", variable_get('hosting_dns_tlds', ''));
   $first_dot = strpos($url, '.');
@@ -315,8 +315,8 @@ function _hosting_dns_split_url($url) {
  *
  * @param $origin
  *   The name (or origin) of the zone/domain
- **/
+ */
 function _hosting_dns_get_zid($origin) {
-  return db_result(db_query('SELECT zid FROM {hosting_dns_soa} WHERE origin LIKE "%%%s%%"', $origin));
+  return db_result(db_query('SELECT id AS zid FROM {hosting_dns_soa} WHERE origin LIKE "%%%s%%"', $origin));
 }   
 
