@@ -3,6 +3,8 @@
 
 /**
  * Implementation of hook_schema().
+ *
+ * This is partly based on http://mydns.bboy.net/doc/html/mydns_9.html#SEC9 
  */
 function hosting_dns_schema() {
   $schema['hosting_dns_server'] = array(
@@ -47,8 +49,8 @@ function hosting_dns_schema() {
   $schema['hosting_dns_soa'] = array(
     'description' => t('Storage of individual DNS zone details, compatible with MyDNS (because it uses RFC1537 standard field names).'),
     'fields' => array(
-      'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The zone ID. Maps to the nid of the zone in the node table.')),
-      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('Revision number of this zone, if revisions are enabled, otherwise equal to the zid')),
+      'id' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The zone ID. Maps to the nid of the zone in the node table.')),
+      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('Revision number of this zone, if revisions are enabled, otherwise equal to the id')),
       'origin' => array(
         'description' => t('TODO: please describe this field!'),
         'type' => 'char',
@@ -110,26 +112,26 @@ function hosting_dns_schema() {
         'not null' => TRUE,
       ),
     ),
-    'primary key' => array('zid','vid'),
+    'primary key' => array('id','vid'),
     'unique keys' => array(
       'vid' => array('vid'),
       'origin' => array('origin')
     ),
     'indexes' => array(
-      'zid' => array('zid')
+      'id' => array('id')
     ),
   );
   $schema['hosting_dns_rr'] = array(
     'description' => t('Storage of records associated with zones, compatible with MyDNS (because it uses RFC1537 standard field names).'),
     'fields' => array(
-      'rid' => array(
+      'id' => array(
         'description' => t('Unique identifier for this record'),
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The ID of the zone this record belongs to')),
-      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The version of the zone this record belongs to, if revisions are active (otherwise = zid)')),
+      'zone' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The ID of the zone this record belongs to')),
+      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The version of the zone this record belongs to, if revisions are active (otherwise equal to the zone field)')),
       'name' => array(
         'description' => t('TODO: please describe this field!'),
         'type' => 'char',
@@ -162,9 +164,9 @@ function hosting_dns_schema() {
         'not null' => FALSE,
       ),
     ),
-    'primary key' => array('rid'),
+    'primary key' => array('id'),
     'unique keys' => array(
-      'rr' => array('zid', 'name', 'type', 'data')
+      'rr' => array('zone', 'name', 'type', 'data')
     ),
   );
   return $schema;
