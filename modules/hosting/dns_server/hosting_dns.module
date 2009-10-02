@@ -36,6 +36,18 @@ function hosting_dns_help($section) {
 }
 
 /**
+ * implementation of hook_hosting_tasks
+ */
+function hosting_dns_hosting_tasks($type, $task = null) {
+  $options = array();
+  if ($type == 'zone') {
+    $options['verify'] = array('title' => t('Verify'), 'description' => t('This will create or regenerate the complete zonefile from the information in the database.'), 'weight' => 1);
+    $options['delete'] = array('title' => t('Delete'), 'description' => t('This will delete the zone and all associated records.'), 'weight' => 3);
+  }
+  return $options;
+}
+ 
+/**
  * Implementation of hook_menu().
  */
 function hosting_dns_menu() {
@@ -603,6 +615,13 @@ function hosting_dns_load($node) {
   return $additions;
 }
 
+function hosting_task_zone_load($node) {
+  if (!is_object($node)) {
+    $node = node_load($node);
+  }
+  return $node;
+} 
+
 /**
  * Implementation of hook_view().
  */
@@ -714,8 +733,19 @@ function hosting_dns_view($node, $teaser = FALSE, $page = FALSE) {
      '#type' => 'fieldset',
      '#title' => t('Zone details'),
     );
+    $node->content['zone']['#prefix'] = '<div id="hosting-site-info">';
     foreach (hosting_dns_zone_fields() as $field => $title) {
       $node->content['zone'][$field] = array('#type' => 'item', '#title' => $title, '#value' => $node->$field);
+    }
+  $node->content['zone']['#suffix'] = '</div>';
+    if ($node->nid) { 
+      $node->content['tasks_view'] = array(
+        '#type' => 'item',
+        '#value' => hosting_task_table($node),
+        '#prefix' => '<div id="hosting-task-list">',
+        '#suffix' => '</div>', 
+        '#weight' => 10
+      );
     }
     break;
   }
