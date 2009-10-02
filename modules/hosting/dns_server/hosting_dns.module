@@ -41,8 +41,8 @@ function hosting_dns_help($section) {
 function hosting_dns_hosting_tasks($type, $task = null) {
   $options = array();
   if ($type == 'zone') {
-    $options['verify'] = array('title' => t('Verify'), 'description' => t('This will create or regenerate the complete zonefile from the information in the database.'), 'weight' => 1);
-    $options['delete'] = array('title' => t('Delete'), 'description' => t('This will delete the zone and all associated records.'), 'weight' => 3);
+    $options['zone verify'] = array('title' => t('Verify'), 'description' => t('This will create or regenerate the complete zonefile from the information in the database.'), 'weight' => 1);
+    $options['zone delete'] = array('title' => t('Delete'), 'description' => t('This will delete the zone and all associated records.'), 'weight' => 3);
   }
   return $options;
 }

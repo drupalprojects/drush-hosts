@@ -29,7 +29,6 @@ function drush_hosting_dns_pre_hosting_task($task) {
     $task->options['dns_named_rndc'] = $dns->named_rndc;
   } elseif ($task->ref->type == 'zone') {
     $zone = $task->ref;
-    $task->args[0] = $task->task_type;
     // pass the whole zone node
     $task->options['zone'] = $zone;
   }
