@@ -21,8 +21,11 @@ function hosting_ssl_form_alter(&$form, &$form_state, $form_id) {
     }
     // small chunk of code to toggle the ports when SSL is chosen
     $javascript = '$("#edit-port-80").attr("checked", !this.checked);$("#edit-port-443").attr("checked", this.checked);';
+
     $form['port']['ssl'] = array('#type' => 'checkbox', '#title' => 'Enable SSL encryption', '#default_value' => $default, '#weight' => 4, '#attributes' => array('onClick' => $javascript . ';if (!this.checked) { $("#edit-ssl-redirect").attr("checked", this.checked) };'),);
     $form['port']['ssl_redirect'] = array('#type' => 'checkbox', '#title' => 'Redirect HTTP to HTTPS', '#default_value' => $redirect, '#weight' => 5, '#attributes' => array('onClick' => 'if (this.checked) { ' . $javascript . ';$("#edit-ssl").attr("checked", this.checked);}'),);
+    $form['port']['ssl_wildcard'] = array('#type' => 'checkbox', '#title' => 'Use server-wide wildcard certificate', '#default_value' => array($form['#node']->ssl_wildcard), '#weight' => 5);
+    
     $form['port']['#title'] = t("Port and encryption");
   }
 }
