@@ -415,7 +415,6 @@ function hosting_site_validate($node, &$form) {
   if (!hosting_domain_allowed($url, (array) $node)) {
     form_set_error('title', t("The domain name you have specified is already in use."));
   }
-
   if (!array_key_exists($node->profile, hosting_get_profiles($node->platform))) {
     form_set_error('profile', t('Please fill in a valid profile'));
   }
@@ -877,6 +876,11 @@ function hosting_site_menu() {
  */
 function _hosting_site_form_profile($platform = NULL) {
   $profiles = hosting_get_profiles($platform);
+  foreach ($profiles as $profile => $title) {
+    if (in_array($title, array('hostmaster', 'hostslave'))) {
+      unset($profiles[$profile]);
+    }
+  }
   if (sizeof($profiles) > 1) {
     $form['profile'] = array(
       '#type' => 'radios',
@@ -889,7 +893,7 @@ function _hosting_site_form_profile($platform = NULL) {
     );
   }
   else {
-    $form['profile'] = array('#type' => 'hidden', '#default_value' => key($profiles), '#attributes' => array('class' => "hosting-site-form-profile-options"));
+    $form['profile'] = array('#type' => 'hidden', '#value' => key($profiles), '#default_value' => key($profiles), '#attributes' => array('class' => "hosting-site-form-profile-options"));
   }
   return $form['profile'];
 }
