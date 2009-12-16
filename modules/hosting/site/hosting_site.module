@@ -895,7 +895,7 @@ function _hosting_site_form_profile($platform = NULL) {
       );
     }
     else {
-      // We still have more than one platform,
+      // We still have more than one profile,
       // so display the available options
       $form['profile'] = array(
         '#type' => 'radios',
@@ -909,7 +909,7 @@ function _hosting_site_form_profile($platform = NULL) {
     }
   }
   else {
-    // We only ever had one platform
+    // We only ever had one profile for this platform
     $form['profile'] = array(
       '#type' => 'hidden', 
       '#value' => key($profiles), 
