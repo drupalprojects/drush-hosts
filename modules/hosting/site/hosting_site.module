@@ -876,24 +876,46 @@ function hosting_site_menu() {
  */
 function _hosting_site_form_profile($platform = NULL) {
   $profiles = hosting_get_profiles($platform);
-  foreach ($profiles as $profile => $title) {
-    if (in_array($title, array('hostmaster', 'hostslave'))) {
-      unset($profiles[$profile]);
+  if (sizeof($profiles) > 1) {
+    // If any of the profiles are hostmaster or hostslave,
+    // drop them from the array
+    foreach ($profiles as $profile => $title) {
+      if (in_array($title, array('hostmaster', 'hostslave'))) {
+        unset($profiles[$profile]);
+      }
+    }
+    if (sizeof($profiles) == 1) {
+    // If that has dropped the array to only one
+    // item, drop the selection list from the form
+      $form['profile'] = array(
+        '#type' => 'hidden', 
+        '#value' => key($profiles), 
+        '#default_value' => key($profiles), 
+        '#attributes' => array('class' => "hosting-site-form-profile-options")
+      );
+    }
+    else {
+      // We still have more than one platform,
+      // so display the available options
+      $form['profile'] = array(
+        '#type' => 'radios',
+        '#title' => t('Install profile'),
+        '#description' => t('The type of site to install.'),
+        '#options' => $profiles,
+        '#default_value' => key($profiles),
+        '#required' => TRUE,
+        '#attributes' => array('class' => "hosting-site-form-profile-options"),
+      );
     }
   }
-  if (sizeof($profiles) > 1) {
-    $form['profile'] = array(
-      '#type' => 'radios',
-      '#title' => t('Install profile'),
-      '#description' => t('The type of site to install.'),
-      '#options' => $profiles,
-      '#default_value' => key($profiles),
-      '#required' => TRUE,
-      '#attributes' => array('class' => "hosting-site-form-profile-options"),
-    );
-  }
   else {
-    $form['profile'] = array('#type' => 'hidden', '#value' => key($profiles), '#default_value' => key($profiles), '#attributes' => array('class' => "hosting-site-form-profile-options"));
+    // We only ever had one platform
+    $form['profile'] = array(
+      '#type' => 'hidden', 
+      '#value' => key($profiles), 
+      '#default_value' => key($profiles), 
+      '#attributes' => array('class' => "hosting-site-form-profile-options")
+    );
   }
   return $form['profile'];
 }
