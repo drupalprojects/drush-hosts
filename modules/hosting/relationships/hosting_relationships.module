@@ -1,0 +1,129 @@
+<?php
+
+// @TODO perhaps we need hook_nodeapi to generate relationships on node_save that
+// aren't part of a drush post_ task ?
+
+/**
+ * Add a relationship
+ */
+function hosting_add_relationship($nid, $rid, $type) {
+  return db_query("INSERT INTO {hosting_relationships} (nid, rid, type) VALUES (%d, %d, '%s')", 
+                   $nid, $rid, $type);
+}
+
+/**
+ * Get a specific relationship
+ */
+function hosting_get_relationship($nid, $rid, $type) {
+  return db_query("SELECT * FROM {hosting_relationships} WHERE nid = %d, rid = %d, type = '%s'", $nid, $rid, $type);
+}
+
+/**
+ * Get all relationships that this element has with others.
+ */
+function hosting_get_relationships($nid) {
+  return db_query("SELECT * FROM {hosting_relationships} WHERE %d IN (nid, rid)", $nid);
+}
+
+/**
+ * Get all relationships where this element is a parent of the other.
+ */
+function hosting_get_relationships_as_parent($rid) {
+  return db_query("SELECT * FROM {hosting_relationships} WHERE rid = %d", $rid);
+}
+
+/**
+ * Get all relationships where this element is a child of the other.
+ */
+function hosting_get_relationships_as_child($nid) {
+  return db_query("SELECT * FROM {hosting_relationships} WHERE nid = %d", $nid);
+}
+
+/**
+ * Get a relationship based on its type. Two elements might have more than one relationship with each other
+ */
+function hosting_get_relationship_by_type($nid, $type) {
+  return db_query("SELECT * FROM {hosting_relationships} WHERE %d IN (nid, rid) AND type = '%s'", $nid, $type);
+}
+
+/**
+ * Delete a specific relationship
+ */
+function hosting_delete_relationship($nid, $rid, $type) {
+  return db_query("DELETE FROM {hosting_relationships} WHERE nid = %d AND rid = %d AND type = '%s'",
+                   $nid, $rid, $type);
+}
+
+/**
+ * Might be useful where a site is deleted, you remove relationships that this element was a parent of
+ * (perhaps a site is cloned, the original is deleted, and the relationship to this deleted original site
+ * needs removing
+ */
+
+function hosting_del_relationship_by_rel($nid, $rid, $type) {
+  return db_query("INSERT INTO {hosting_relationships} (nid, rid, type) VALUES (%d, %d, '%s')",
+                   $nid, $rid, $type);
+}
+
+/**
+ * Implementation of hook_menu()
+ */
+function hosting_relationships_menu() {
+  $items = array();
+  $items['node/%node/relationships'] = array(
+    'title' => t('Relationships'),
+    'description' => t('List of relationships this item has with others'),
+    'page callback' => 'hosting_relationship_list',
+    'page arguments' => array(1),
+    'access arguments' => array('view relationships'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+  return $items;
+}
+
+/**
+ * Generate a table of relationships to this node, be it a parent or child relationship
+ */
+function hosting_relationship_list($node) {
+  drupal_set_title(t('Relationships of @reference', array('@reference' => $node->title)));
+
+  $header = array(
+    array('data' => t('Relative'), 'field' => 'rid', 'sort' => 'DESC'),
+    array('data' => t('Type'), 'field' => 'type'),
+    array('data' => t('Relationship to'), 'field' => 'relationship_type', 'sort' => 'DESC'),
+    );
+  $args[] = $node->nid;
+  $args[] = $node->nid;
+
+  $sql = "SELECT * FROM {hosting_relationships} WHERE %d IN (nid, rid)";
+  $sql .= tablesort_sql($header);
+  // @TODO hide deleted sites
+  $result = pager_query(db_rewrite_sql($sql, 'r'), 25, 2, null, $args);
+
+  if (!$result) {
+    return t('@reference has no relationships to any other elements', array('@reference' => $node->title));
+  }
+  $rows = array();
+  while ($relationship = db_fetch_object($result)) {
+    $row = array();
+    if ($relationship->rid == $node->nid) {
+      $child = node_load($relationship->nid);
+      $row[] = l(filter_xss($child->title), 'node/' . $child->nid);
+    } else {
+      $parent = node_load($relationship->rid);
+      $row[] = l(filter_xss($parent->title), 'node/' . $parent->nid);
+    }
+    $row[] = ucfirst($relationship->type);
+    if ($relationship->rid == $node->nid) {
+      $row[] = t('Parent');
+    } else {
+      $row[] = t('Child');
+    }
+   
+    $rows[] = array('data' => $row);
+  }
+  
+  return theme('table',  $header, $rows, array('class' => 'hosting-table')) . theme('pager', null, 25, 2);
+}
+

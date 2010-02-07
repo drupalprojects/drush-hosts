@@ -1,0 +1,6 @@
+name = Relationships
+description = Establish relationships between elements in Aegir
+package = Hosting
+dependencies[] = hosting
+
+core = 6.x
