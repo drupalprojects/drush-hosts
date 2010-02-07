@@ -1,5 +1,22 @@
 <?php
 
+define('HOSTING_CLONE_OVERWRITE', 0);
+
+/**
+ * Implementation of hook_menu
+ */
+function hosting_clone_menu() {
+  $items['admin/hosting/clone'] = array(
+    'title' => 'Clone',
+    'description' => 'Configure cloning settings for hosted sites',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hosting_clone_settings'),
+    'access arguments' => array('administer cloning settings'),
+    'type' => MENU_LOCAL_TASK
+  );
+  return $items;
+}
+
 function hosting_clone_hosting_tasks() {
   $options = array();
 
@@ -76,5 +93,20 @@ function hosting_task_clone_form($node) {
 
 function theme_hosting_task_clone_form(&$form) {
   return theme_hosting_task_migrate_form($form);
+}
+
+/**
+ * Configuration form for cloning
+ */
+function hosting_clone_settings() {
+  if (module_exists('hosting_relationships')) {
+    $form['hosting_clone_overwrite'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Allow clones to be overwritten?'),
+      '#description' => t('Check this option if you wish to be able to overwrite cloned sites with new ones of the same name.'),
+      '#default_value' => variable_get('hosting_clone_overwrite', FALSE),
+    );
+    return system_settings_form($form);
+  };
 }
 

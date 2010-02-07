@@ -1,0 +1,44 @@
+<?php
+// $Id$
+
+
+/**
+ * Implementation of hook_schema().
+ */
+function hosting_relationships_schema() {
+  $schema['hosting_relationships'] = array(
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'rid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '0',
+      )),
+    'primary key' => array('nid'),
+  );
+  return $schema;
+}
+
+function hosting_relationships_install() {
+  // Create tables.
+  drupal_install_schema('hosting_relationships');
+}
+
+function hosting_relationships_uninstall() {
+  // Remove tables.
+  drupal_uninstall_schema('hosting_relationships');
+
+}
+

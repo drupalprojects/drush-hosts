@@ -22,6 +22,11 @@ function drush_hosting_clone_pre_hosting_task($task) {
       $task->options['aliases'] = str_replace("\n", ",", $task->task_args['aliases']);
       $task->options['redirection'] = $task->task_args['redirection'];
     }
+    if (module_exists('hosting_relationships')) {
+      if (variable_get('hosting_clone_overwrite', FALSE)) {
+        $task->options['overwrite'] = 1;
+      }
+    }
   }
 }
 
@@ -50,6 +55,11 @@ function hosting_clone_post_hosting_clone_task($task, $data) {
     }
 
     node_save($clone);
+
+    // Add a relationship of this cloned site to its original
+    if (module_exists('hosting_relationships')) {
+      hosting_add_relationship($clone->nid, $task->ref->nid, $task->task_type);
+    }
   }
 }
 
