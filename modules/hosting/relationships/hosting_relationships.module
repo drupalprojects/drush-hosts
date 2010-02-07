@@ -91,7 +91,7 @@ function hosting_relationship_list($node) {
   $header = array(
     array('data' => t('Relative'), 'field' => 'rid', 'sort' => 'DESC'),
     array('data' => t('Type'), 'field' => 'type'),
-    array('data' => t('Relationship to'), 'field' => 'relationship_type', 'sort' => 'DESC'),
+    array('data' => t('Relationship to relative')),
     );
   $args[] = $node->nid;
   $args[] = $node->nid;
