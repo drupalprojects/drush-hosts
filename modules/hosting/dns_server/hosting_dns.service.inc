@@ -53,16 +53,6 @@ class hostingService_DNS extends hostingService {
     parent::form($form);
     $node = $form['#node'];
 
-    $form['title'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Hostname'),
-      '#description' => t('The address of the DNS server.'),
-      '#size' => 30,
-      '#default_value' => $node->title,
-      '#maxlength' => 64,
-      '#weight' => 0,
-    );
-  
     if ($this->type == 'bind') {
       $form['bind_settings'] = array(
         '#type' => 'fieldset', 
