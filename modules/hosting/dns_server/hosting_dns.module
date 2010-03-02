@@ -16,8 +16,20 @@ include_once(drupal_get_path('module', 'hosting_dns') . '/hosting_dns.api.inc');
 function hosting_dns_init() {
   define('HOSTING_DEFAULT_DNS_SERVER', variable_get('hosting_default_dns_server', null));
 }
+
+/**
+ * Implementation of hook_hosting_service()
+ *
+ * @see hosting_help_requirements()
+ */
 function hosting_dns_hosting_service() {
-  return array("dns_server" => t("DNS Server"));
+  return array( "dns" => array(
+    'title' => t("DNS server"),
+    'type' => 'Bind', 
+    'class' => 'hostingService_DNS',
+    'module' => 'hosting_dns',
+    'file' => 'hosting_dns.service.inc',
+  ));
 }
 
 function hosting_dns_help($section) {
@@ -38,12 +50,10 @@ function hosting_dns_help($section) {
 /**
  * implementation of hook_hosting_tasks
  */
-function hosting_dns_hosting_tasks($type, $task = null) {
+function hosting_dns_hosting_tasks() {
   $options = array();
-  if ($type == 'zone') {
-    $options['zone verify'] = array('title' => t('Verify'), 'description' => t('This will create or regenerate the complete zonefile from the information in the database.'), 'weight' => 1);
-    $options['zone delete'] = array('title' => t('Delete'), 'description' => t('This will delete the zone and all associated records.'), 'weight' => 3);
-  }
+  $options['zone']['zone-verify'] = array('title' => t('Verify'), 'description' => t('This will create or regenerate the complete zonefile from the information in the database.'), 'weight' => 1);
+  $options['zone']['zone-delete'] = array('title' => t('Delete'), 'description' => t('This will delete the zone and all associated records.'), 'weight' => 3);
   return $options;
 }
  
@@ -277,175 +287,6 @@ function _hosting_get_dns_servers() {
  */
 function hosting_dns_form(&$node) {
   switch ($node->type) { 
-  case 'dns_server':
-    $form['title'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Hostname'),
-      '#description' => t('The address of the DNS server.'),
-      '#size' => 30,
-      '#default_value' => $node->title,
-      '#maxlength' => 64,
-      '#weight' => 0,
-    );
-  
-    /**
-    $form['engine'] = array(
-      '#type' => 'select',
-      '#title' => t('Type/Engine'),
-      '#description' => t('The type of DNS server engine this is.'),
-  # These options should come from the available provision engines..
-  # the available engines should also be configurable, somehow.. 
-      '#options' => array('bind' => t('BIND'), 'mydns' => t('MyDNS'), 'djbdns' => t('djbdns')),
-      '#default_value' => $node->engine,
-    );*/
-    $form['engine'] = array(
-      '#type' => 'value',
-      '#value' => 'bind');
-    $node->engine = 'bind';
-  
-    if ($node->engine == 'bind') {
-      $form['bind_settings'] = array(
-        '#type' => 'fieldset', 
-        '#title' => t('BIND Config'),
-        '#collapsible' => TRUE, '#collapsed' => TRUE,
-      );
-      $form['bind_settings']['zonedata'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Zone Data Path'),
-        '#description' => t('Full path to bind zonefiles. Must NOT be writable by Apache.'),
-        '#default_value' => $node->zonedata ? $node->zonedata : HOSTING_DEFAULT_CONFIG_PATH .'/named',
-        '#size' => 40,
-        '#maxlength' => 128,
-      );
-      $form['bind_settings']['named_conf'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Local Bind Config Filename'),
-        '#description' => t('Configuration file for Aegir-generated zones. Resides in zone data path and 
-    must be included via named.conf'),
-        '#default_value' => $node->named_conf ? $node->named_conf : 'named.conf.drupal',
-        '#size' => 40,
-        '#maxlength' => 128,
-      );
-  
-      $form['bind_utilities'] = array(
-        '#type' => 'fieldset', 
-        '#title' => t('Bind Utilities'),
-        '#collapsible' => TRUE, '#collapsed' => TRUE,
-      );
-      $form['bind_utilities']['named_checkconf'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Full path to named-checkconf'),
-        '#default_value' => $node->named_checkconf ? $node->named_checkconf : '/usr/sbin/named-checkconf',
-        '#size' => 40,
-        '#maxlength' => 128,
-      );
-      $form['bind_utilities']['named_checkzone'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Full path to named-checkzone'),
-        '#default_value' => $node->named_checkzone ? $node->named_checkzone : '/usr/sbin/named-checkzone',
-        '#size' => 40,
-        '#maxlength' => 128,
-      );
-      $form['bind_utilities']['rndc'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Full path to rndc'),
-        '#default_value' => $node->rndc ? $node->rndc : '/usr/sbin/rndc',
-        '#size' => 40,
-        '#maxlength' => 128,
-      );
-    }
-    $form['dns_defaults'] = array(
-        '#type' => 'fieldset', 
-      '#title' => t('DNS Provisioning defaults'), 
-      '#collapsible' => TRUE, 
-      '#collapsed' => TRUE,
-    );
-    $form['dns_defaults']['default_ip'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Default Server IP'),
-      '#default_value' => $node->default_ip?$node->default_ip:'127.0.0.1',
-      '#size' => 20,
-      '#maxlength' => 15,
-      '#description' => t('Use this IP as the default server for new zones.'),
-    );
-    $form['dns_defaults']['xfer'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Zone Transfer Access List'),
-      '#default_value' => $node->xfer,
-      '#size' => 40,
-      '#maxlength' => 255,
-      '#description' => t('Comma-separated list of IP addresses allowed to transfer this zone via AXFR'),
-    );
-    $form['dns_defaults']['mbox'] = array(
-      '#type' => 'textfield',
-      '#title' => t('DNS Admin Email Address'),
-      '#default_value' => $node->mbox,
-      '#size' => 40,
-      '#maxlength' => 128,
-      '#description' => t('Ampersand will be converted to a period as per specification. This value will be entered into zonefiles.'),
-    );
-    $form['dns_defaults']['ns'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Name Servers'),
-      '#default_value' => $node->ns,
-      '#size' => 40,
-      '#maxlength' => 128,
-      '#description' => t('Default DNS servers for zonefiles eg: ns1.example.com (1 per line)')
-    );
-    $form['dns_defaults']['refresh'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Refresh'),
-      '#default_value' => $node->refresh?$node->refresh:'7200',
-      '#size' => 40,
-      '#maxlength' => 128,
-      '#description' => t('How often secondary servers should refresh this zone (default 2h)'),
-    );
-    $form['dns_defaults']['retry'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Retry'),
-      '#default_value' => $node->retry?$node->retry:'300',
-      '#size' => 40, 
-      '#maxlength' => 128,
-      '#description' => t('How often secondary servers should retry in case of a problem (default 5m)'),
-    );
-    $form['dns_defaults']['expire'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Expire'),
-      '#default_value' => $node->expire?$node->expire:'604800',
-      '#size' => 40,
-      '#maxlength' => 128,
-      '#description' => t('How long until the secondary servers expire the zone data (default 4w)'),
-    );
-    $form['dns_defaults']['minimum'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Minimum TTL'),
-      '#default_value' => $node->minimum?$node->minimum:'86400',
-      '#size' => 40,
-      '#maxlength' => 128,
-      '#description' => t('Minimum caching time in case of failed lookups (default 1w)'),
-    );
-    $form['dns_defaults']['ttl'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Time To Live'),
-      '#default_value' => $node->ttl?$node->ttl:'86400',
-      '#size' => 40,
-      '#maxlength' => 128,
-      '#description' => t('Default TTL for zone resource records without their own TTL value (default 1w)'),
-    );
-    
-    if ($node->nid != HOSTING_DEFAULT_DNS_SERVER) {
-      $form['default_dns_server'] = array(
-        '#type' => 'checkbox',
-        '#return_value' => 1,
-        '#title' => t('Make default dns server'),
-      );
-    } else {
-      $form['default_dns_server'] = array(
-        '#type' => 'value', 
-        '#value' => 1
-      );
-    }
-    break;
   case 'zone':
     $fields = hosting_dns_zone_fields();
     if (!$node->nid) {
@@ -471,48 +312,10 @@ function hosting_dns_form(&$node) {
 }
 
 /**
- * Implementation of hook_validate().
- */
-function hosting_dns_validate($node, &$form) {
-  switch ($node->type) { 
-  case 'dns_server':
-    # TODO: validate all the various DNS fields!
-    # and also the settings and utilities!
-    if ($node->engine != 'bind') {
-      form_set_error('engine', 'Only the BIND engine is supported at this time.');
-    }
-    break;
-  }
-}
-
-/**
  * Implementation of hook_insert().
  */
 function hosting_dns_insert($node) {
   switch ($node->type) { 
-  case 'dns_server':
-   if ($node->default_dns_server == 1) {
-      variable_set('hosting_default_dns_server', $node->nid);
-   }
-   db_query("INSERT INTO {hosting_dns_server} (vid, nid, engine, default_ip, ns, mbox, refresh, retry, expire, minimum, ttl, xfer) 
-      VALUES (%d, %d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", 
-      $node->vid, $node->nid, $node->engine, $node->default_ip, $node->ns, $node->mbox, $node->refresh, $node->retry, $node->expire, $node->minimum, $node->ttl, $node->xfer);
-
-   if ($node->engine == 'bind') {
-     # prepare the data and serialize as array
-     # zonedata and named_conf
-     # named_checkconf, named_checkzone, and rndc
-     $data = array(
-       'zonedata' => $node->zonedata,
-       'named_conf' => $node->named_conf,
-       'named_checkconf' => $node->named_checkconf,
-       'named_checkzone' => $node->named_checkzone,
-       'rndc' => $node->rndc,
-     );
-     db_query("INSERT INTO {hosting_dns_server_config} (vid,nid,engine,data) VALUES (%d, %d, '%s', '%s')",
-	       $node->vid, $node->nid, $node->engine, serialize($data));
-   } # other engines will use this differently
-    break;
   case 'zone':
     $node->id = $node->nid;
     drupal_write_record('hosting_dns_soa', $node);
@@ -533,51 +336,9 @@ function hosting_dns_insert($node) {
  */
 function hosting_dns_update($node) {
   switch ($node->type) { 
-  case 'dns_server':
-   if ($node->revision) {
-    hosting_dns_insert($node);
-  } else {
-    if ($node->default_dns_server == 1) {
-      variable_set('hosting_default_dns_server', $node->nid);
-    }
-    db_query("UPDATE {hosting_dns_server} SET engine = '%s', default_ip = '%s', ns = '%s', mbox = '%s', refresh = '%s', retry = '%s', expire = '%s', minimum = '%s', ttl = '%s', xfer = '%s' WHERE vid = %d", $node->engine, $node->default_ip, $node->ns, $node->mbox, $node->refresh, $node->retry, $node->expire, $node->minimum, $node->ttl, $node->xfer, $node->vid);
-
-    if ($node->engine == 'bind') {
-     $data = array(
-       'zonedata' => $node->zonedata,
-       'named_conf' => $node->named_conf,
-       'named_checkconf' => $node->named_checkconf,
-       'named_checkzone' => $node->named_checkzone,
-       'rndc' => $node->rndc,
-     );
-     db_query("UPDATE {hosting_dns_server_config} SET engine = '%s', data = '%s' WHERE vid = %d", $node->engine, serialize($data), $node->vid);
-    }
-  }
-    break;
   case 'zone':
     drupal_write_record('hosting_dns_soa', $node, 'id');
     module_invoke_all("hosting_dns_zone", 'update', $node);
-    break;
-  }
-}
-
-function hosting_nodeapi_dns_server_delete_revision(&$node) {
-  switch ($node->type) { 
-  case 'dns_server':
-    db_query('DELETE FROM {hosting_dns_server} WHERE vid = %d', $node->vid);
-    db_query('DELETE FROM {hosting_dns_server_config} WHERE vid = %d', $node->vid);
-    break;
-  }
-}
-
-/**
- * Implementation of hook_delete().
- */
-function hosting_dns_delete($node) {
-  switch ($node->type) { 
-  case 'dns_server':
-    db_query('DELETE FROM {hosting_dns_server} WHERE zid = %d', $node->nid);
-    db_query('DELETE FROM {hosting_dns_server_config} WHERE zid = %d', $node->nid);
     break;
   }
 }
@@ -587,21 +348,6 @@ function hosting_dns_delete($node) {
  */
 function hosting_dns_load($node) {
   switch ($node->type) { 
-  case 'dns_server':
-    $additions = db_fetch_object(db_query('SELECT engine, default_ip, ns, mbox, refresh, retry, expire, minimum, ttl, xfer FROM {hosting_dns_server} WHERE vid = %d', $node->vid));
-  
-    $config_obj = db_fetch_object(db_query('SELECT vid,engine,data FROM {hosting_dns_server_config} WHERE vid = %d AND engine="%s"', $node->vid, $additions->engine));
-  
-    if ($additions->engine == 'bind') {
-      $bind_settings = unserialize($config_obj->data);
-  
-      $additions->zonedata = $bind_settings['zonedata'];
-      $additions->named_conf = $bind_settings['named_conf'];
-      $additions->named_checkconf = $bind_settings['named_checkconf'];
-      $additions->named_checkzone = $bind_settings['named_checkzone'];
-      $additions->rndc = $bind_settings['rndc'];
-    }
-    break;
   case 'zone':
     $additions = db_fetch_object(db_query('SELECT origin, mbox, serial, refresh, retry, expire, minimum, ttl, xfer FROM {hosting_dns_soa} WHERE vid = %d', $node->vid));
     $records = array();
@@ -628,106 +374,6 @@ function hosting_task_zone_load($node) {
 function hosting_dns_view($node, $teaser = FALSE, $page = FALSE) {
   $node = node_prepare($node, $teaser);
   switch ($node->type) { 
-  case 'dns_server':
-
-    $node->content['engine'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('DNS engine: ' . $node->engine),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#weight' => -1,
-    );
-    if ($node->engine == 'bind' && user_access('administer DNS provisioning')) {
-      $node->content['engine']['zonedata'] = array(
-        '#type' => 'item',
-        '#title' => t('Zone Data directory'),
-        '#value' => $node->zonedata,
-        '#weight' => -1,
-      );
-  
-      $node->content['engine']['named_conf'] = array(
-        '#type' => 'item',
-        '#title' => t('Named config file'),
-        '#value' => $node->named_conf,
-      );
-  
-      $node->content['engine']['named_checkconf'] = array(
-        '#type' => 'item',
-        '#title' => t('Named config utility'),
-        '#value' => $node->named_checkconf,
-      );
-      $node->content['engine']['named_checkzone'] = array(
-        '#type' => 'item',
-        '#title' => t('Named zone utility'),
-        '#value' => $node->named_checkzone,
-      );
-      $node->content['engine']['rndc'] = array(
-        '#type' => 'item',
-        '#title' => t('Named RNDC utility'),
-        '#value' => $node->rndc,
-      );
-    }
-  
-    $node->content['defaults'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Defaults'),
-      '#collapsible' => TRUE,
-      '#collapsed' => $teaser?TRUE:FALSE,
-    );
-    $node->content['defaults']['default_ip'] = array(
-      '#type' => 'item',
-      '#title' => t('Default Server IP'),
-      '#value' => $node->default_ip,
-    );
-    $node->content['defaults']['ns'] = array(
-      '#type' => 'item',
-      '#title' => t('Default NS Records'),
-      '#value' => preg_replace("/\n/", '<br />', $node->ns),
-    );
-    $node->content['defaults']['mbox'] = array(
-      '#type' => 'item',
-      '#title' => t('DNS Admin Email'),
-      '#value' => $node->mbox,
-    );
-    $node->content['defaults']['refresh'] = array(
-      '#type' => 'item',
-      '#title' => t('Refresh'),
-      '#value' => $node->refresh,
-    );
-    $node->content['defaults']['retry'] = array(
-      '#type' => 'item',
-      '#title' => t('Retry'),
-      '#value' => $node->retry,
-    );
-    $node->content['defaults']['expire'] = array(
-      '#type' => 'item',
-      '#title' => t('Expire'),
-      '#value' => $node->expire,
-    );
-    $node->content['defaults']['minimum'] = array(
-      '#type' => 'item',
-      '#title' => t('Minimum TTL'),
-      '#value' => $node->minimum
-    );
-    $node->content['defaults']['ttl'] = array(
-      '#type' => 'item',
-      '#title' => t('TTL'),
-      '#value' => $node->ttl,
-    );
-    $node->content['defaults']['xfer'] = array(
-      '#type' => 'item',
-      '#title' => t('Zone Transfer Access List'),
-      '#value' => $node->xfer,
-    );
-  # This should show a table of all sites that use this DNS server to host their domain?
-  # Needs entries in hosting_site table to work properly..
-  #  $node->content['sites_view'] = array(
-  #    '#type' => 'item',
-  #    '#title' => t("Sites"),
-  #    '#value' => hosting_site_list("dns_server", $node->nid), 
-  #    '#weight' => 10,
-  #  );
-     break;
   case 'zone':
     $node->content['zone'] = array(
      '#type' => 'fieldset',
