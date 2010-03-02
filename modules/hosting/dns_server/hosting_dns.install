@@ -6,6 +6,7 @@
  */
 function hosting_dns_schema() {
   $schema['hosting_dns_server'] = array(
+    'description' => t('Fields specific to the DNS server content type. Mostly defaults for the zonefiles created in this server.'),
     'fields' => array(
       'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
       'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
@@ -23,9 +24,8 @@ function hosting_dns_schema() {
     'primary key' => array('vid'),
   );
 
-  # This table is intended to keep track of "per-engine" configuration
-  # details, specific to the particular backend (BIND, myDNS, etc)
   $schema['hosting_dns_server_config'] = array(
+    'description' => t('Keep track of "per-engine" configuration details, specific to the particular backend (BIND, myDNS, etc)'),
     'fields' => array(
       'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
       'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
@@ -35,8 +35,8 @@ function hosting_dns_schema() {
     'primary key' => array('vid'),
   );
 
-  // The hosting_dns_server_zone table maps DNS server nodes onto zone IDs
   $schema['hosting_dns_server_zone'] = array(
+    'description' => t('Map DNS server nodes onto zone IDs'),
     'fields' => array(
       'sid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('nid of the dns server node')),
       'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('nid of the zone node')),
@@ -45,7 +45,7 @@ function hosting_dns_schema() {
   );
 
   $schema['hosting_dns_soa'] = array(
-    'description' => t('TODO: please describe this table!'),
+    'description' => t('Storage of individual DNS zone details, compatible with MyDNS (because it uses RFC1537 standard field names).'),
     'fields' => array(
       'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The zone ID. Maps to the nid of the zone in the node table.')),
       'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('Revision number of this zone, if revisions are enabled, otherwise equal to the zid')),
@@ -120,16 +120,16 @@ function hosting_dns_schema() {
     ),
   );
   $schema['hosting_dns_rr'] = array(
-    'description' => t('TODO: please describe this table!'),
+    'description' => t('Storage of records associated with zones, compatible with MyDNS (because it uses RFC1537 standard field names).'),
     'fields' => array(
       'rid' => array(
-        'description' => t('TODO: please describe this field!'),
+        'description' => t('Unique identifier for this record'),
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
-      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0,),
+      'zid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The ID of the zone this record belongs to')),
+      'vid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => t('The version of the zone this record belongs to, if revisions are active (otherwise = zid)')),
       'name' => array(
         'description' => t('TODO: please describe this field!'),
         'type' => 'char',
