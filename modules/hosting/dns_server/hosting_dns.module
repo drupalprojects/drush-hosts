@@ -542,7 +542,7 @@ function hosting_dns_update($node) {
   }
     break;
   case 'zone':
-    drupal_write_record('hosting_dns_soa', $node, 'nid');
+    drupal_write_record('hosting_dns_soa', $node, 'zid');
     module_invoke_all("hosting_dns_zone", 'update', $node);
     break;
   }
@@ -563,8 +563,8 @@ function hosting_nodeapi_dns_server_delete_revision(&$node) {
 function hosting_dns_delete($node) {
   switch ($node->type) { 
   case 'dns_server':
-    db_query('DELETE FROM {hosting_dns_server} WHERE nid = %d', $node->nid);
-    db_query('DELETE FROM {hosting_dns_server_config} WHERE nid = %d', $node->nid);
+    db_query('DELETE FROM {hosting_dns_server} WHERE zid = %d', $node->nid);
+    db_query('DELETE FROM {hosting_dns_server_config} WHERE zid = %d', $node->nid);
     break;
   }
 }
@@ -592,7 +592,7 @@ function hosting_dns_load($node) {
   case 'zone':
     $additions = db_fetch_object(db_query('SELECT origin, mbox, serial, refresh, retry, expire, minimum, ttl, xfer FROM {hosting_dns_soa} WHERE vid = %d', $node->vid));
     $records = array();
-    $q = db_query('SELECT rid,name,type,data,aux,ttl FROM {hosting_dns_rr} WHERE nid = %d', $node->nid);
+    $q = db_query('SELECT rid,name,type,data,aux,ttl FROM {hosting_dns_rr} WHERE zid = %d', $node->nid);
     while ($record = db_fetch_array($q)) {
       $records[$record['rid']] = $record;
     }
@@ -807,9 +807,9 @@ drupal_set_message("site node inserted: creating zone/RR records for ".$node->ti
         if (user_access('administer DNS provisioning')) {
 drupal_set_message("loading DNS info for site: ".$node->title);
           $data = _hosting_dns_split_url($node->title);
-          $nid = _hosting_dns_get_nid($data['zone']);
-          $additions['zone'] = hosting_dns_status('zone', array('nid' => $nid));
-          $additions['rr'] = hosting_dns_status('rr', array('nid' => $nid, 'name' => $data['host'], 'type' => 'A'));
+          $zid = _hosting_dns_get_zid($data['zone']);
+          $additions['zone'] = hosting_dns_status('zone', array('zid' => $zid));
+          $additions['rr'] = hosting_dns_status('rr', array('zid' => $zid, 'name' => $data['host'], 'type' => 'A'));
           return $additions;
         }
         break;
@@ -821,7 +821,7 @@ drupal_set_message("loading DNS info for site: ".$node->title);
             '#type' => 'item',
             '#title' => t('Zone'),
             '#weight' => 21,
-            '#value' => $node->zone->origin . " (nid:".$node->zone->nid.")",
+            '#value' => $node->zone->origin . " (zid:".$node->zone->nid.")",
           );
           $node->content['info']['record'] = array(
             '#type' => 'item',

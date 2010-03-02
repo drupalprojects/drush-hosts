@@ -10,7 +10,7 @@
  *   What kind of DNS entry to return. Valid $ops are 'zone' and 'rr'.
  * @param $args
  *   An array of fields to identify the object to return.  This must always contain
- *   either a 'nid' or 'domain' key to identify the zone being queried. For RR queries,
+ *   either a 'zid' or 'domain' key to identify the zone being queried. For RR queries,
  *   $args must also contain either a 'rid' key OR a 'name' + 'type' key to identify the RR.
  *
  * @return
@@ -19,23 +19,23 @@
 function hosting_dns_status($op, $args) {
 
   drupal_set_message(t("Deprecated, remove the call to this function and use the node object instead"));
-  if (!isset($args['nid']) && isset($args['domain'])) {
+  if (!isset($args['zid']) && isset($args['domain'])) {
     # TODO: error-check this!
-    $args['nid'] = _hosting_dns_get_nid($args['domain']);
+    $args['zid'] = _hosting_dns_get_zid($args['domain']);
   }
 
   switch ($op) {
     case 'zone':
       // return zone SOA info if it exists
-      $result = db_query("SELECT * FROM {hosting_dns_soa} WHERE nid = %d", $args['nid']);
+      $result = db_query("SELECT * FROM {hosting_dns_soa} WHERE zid = %d", $args['zid']);
       $object = db_fetch_object($result);
       break;
     case 'rr':
       // return RR details, if it exists
       if (isset($args['rid'])) {
-        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE nid = %d AND rid = %d", $args['nid'], $args['rid']);
+        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d", $args['zid'], $args['rid']);
       } else {
-        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE nid = %d AND name = '%s' AND type = '%s'", $args['nid'], $args['name'], $args['type']);
+        $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d AND name = '%s' AND type = '%s'", $args['zid'], $args['name'], $args['type']);
       }
       $object = db_fetch_object($result);
       break;
@@ -47,7 +47,7 @@ function hosting_dns_status($op, $args) {
 /**
  * Get all records for a particular zone.
  *
- * @param $nid
+ * @param $zid
  *   The internal zone ID for which records are being requested.
  * @param $num
  *   If TRUE, return only a count of how many records exist in the given zone.
@@ -56,9 +56,9 @@ function hosting_dns_status($op, $args) {
  * @return
  *   An array of record objects, or a count of how many records the zone contains (if $num == TRUE).
  **/
-function hosting_dns_getrecords($nid, $num = FALSE) {
+function hosting_dns_getrecords($zid, $num = FALSE) {
   $records = array();
-  $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE nid = %d", $nid);
+  $result = db_query("SELECT * FROM {hosting_dns_rr} WHERE zid = %d", $zid);
   while ($rec = db_fetch_object($result)) {
     $records[$rec->rid] = $rec;
   }
@@ -77,7 +77,7 @@ function hosting_dns_getrecords($nid, $num = FALSE) {
  *   The domain name/origin for the zone to be created.
  * @param $data
  *   An array of data to populate the new zone. Most importantly, the 'dns_id' 
- *   field must contain the nid of the DNS server which on which to privision this zone.
+ *   field must contain the zid of the DNS server which on which to privision this zone.
  *
  * @return
  *   The zone object, whether newly created, or already existing.
@@ -144,14 +144,14 @@ function hosting_dns_site_delete($url) {
   $url_parts = _hosting_dns_split_url($url);
 
   if ($zone = hosting_dns_status('zone', array('domain' => $url_parts['domain']))) {
-    if ($rec = hosting_dns_status('rr', array('nid' => $zone->nid, 'name' => $url_parts['host'], 'type' => 'A'))) {
+    if ($rec = hosting_dns_status('rr', array('zid' => $zone->nid, 'name' => $url_parts['host'], 'type' => 'A'))) {
 
       # delete the A record for this site..
       hosting_dns_rr('delete', $zone, array('rid' => $rec->rid));
 
       # and (as long as it's the only host on this domain) delete the zone as well
       if (hosting_dns_getrecords($zone->nid, TRUE) <= 1) { 
-	hosting_dns_zone('delete', array('nid' => $zone->nid));
+	hosting_dns_zone('delete', array('zid' => $zone->nid));
       }
     }
   }
@@ -163,9 +163,9 @@ function hosting_dns_site_delete($url) {
  * @param $op
  *   The operation to be done on the zone. Valid $ops are 'add', 'delete' and 'update'.
  * @param $args
- *   An array which identifies the zone (using the 'origin' or 'nid' keys) plus data for 
+ *   An array which identifies the zone (using the 'origin' or 'zid' keys) plus data for 
  *   use in the operation itself. Valid data keys for $args are:
- *   'dns_id', 'nid', 'origin', 'ns1', 'ns2', 'mbox', 'serial', 'refresh', 'retry', 'expire', 'minimum', 'ttl'
+ *   'dns_id', 'zid', 'origin', 'ns1', 'ns2', 'mbox', 'serial', 'refresh', 'retry', 'expire', 'minimum', 'ttl'
  *   The special 'dns_id' key causes the function to load a dns_server node with this ID for use in populating 
  *   defaults for the other fields.
  *
@@ -217,9 +217,9 @@ function hosting_dns_rr($op, $zone, $args) {
       if (!isset($args['name']) || !isset($args['type']) || !isset($args['data'])) {  # Not enough info
 	return FALSE;
       } 
-      db_query("INSERT INTO {hosting_dns_rr} (nid, name, type, data, aux, ttl) VALUES (%d, '%s', '%s', '%s', %d, %d)", $zone->nid, $args['name'], $args['type'], $args['data'], $args['aux'], $args['ttl']);
+      db_query("INSERT INTO {hosting_dns_rr} (zid, name, type, data, aux, ttl) VALUES (%d, '%s', '%s', '%s', %d, %d)", $zone->nid, $args['name'], $args['type'], $args['data'], $args['aux'], $args['ttl']);
       module_invoke_all('hosting_dns_rr', $op, $zone, $args);
-      hosting_dns_zone('update', array('nid' => $zone->nid, 'serial' => _hosting_dns_increment_serial($zone->serial)));
+      hosting_dns_zone('update', array('zid' => $zone->nid, 'serial' => _hosting_dns_increment_serial($zone->serial)));
       return $record;
       break;
     case 'update':
@@ -242,18 +242,18 @@ function hosting_dns_rr($op, $zone, $args) {
       $values[] = $args['rid'];
 
       if (!empty($keys)) {
-        $sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE nid=%d AND rid=%d";
+        $sql = "UPDATE {hosting_dns_rr} SET ". implode(',', $keys) ." WHERE zid=%d AND rid=%d";
         db_query($sql, $values);
       }
       module_invoke_all('hosting_dns_rr', $op, $zone, $record);
-      hosting_dns_zone('update', array('nid' => $zone->nid, 'serial' => _hosting_dns_increment_serial($zone->serial)));
+      hosting_dns_zone('update', array('zid' => $zone->nid, 'serial' => _hosting_dns_increment_serial($zone->serial)));
       return $record;
       break;
     case 'delete':
       $record = (object) $zone->records[$args['rid']];
       module_invoke_all('hosting_dns_rr', 'delete', $zone, $record);
 
-      db_query('DELETE FROM {hosting_dns_rr} WHERE nid = %d AND rid = %d', $zone->nid, $record->rid);
+      db_query('DELETE FROM {hosting_dns_rr} WHERE zid = %d AND rid = %d', $zone->nid, $record->rid);
       break;
   }
 
@@ -311,11 +311,11 @@ function _hosting_dns_split_url($url) {
 }
 
 /**
- * Helper function to get the nid for a given zone
+ * Helper function to get the zid for a given zone
  *
  * @param $origin
  *   The name (or origin) of the zone/domain **/
-function _hosting_dns_get_nid($origin) {
-  return db_result(db_query("SELECT nid FROM {hosting_dns_soa} WHERE origin LIKE '%%%s%%'", $origin));
+function _hosting_dns_get_zid($origin) {
+  return db_result(db_query("SELECT zid FROM {hosting_dns_soa} WHERE origin LIKE '%%%s%%'", $origin));
 }   
 
