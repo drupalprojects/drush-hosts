@@ -39,11 +39,6 @@ function hosting_dns_help($section) {
       $output .= _hosting_requirements('visudo_dns');
       return $output;
       break;
-    case 'dns_server' :
-      return t("<strong>The DNS server which defines sites and their domains.</strong>
-                Most sites will have a primary and secondary DNS server, at least one of which is usually 
-		remote from the server on which the site actually resides.");
-      break;
   }
 }
 
@@ -222,12 +217,6 @@ function _hosting_visudo_dns_requirements() {
  * Implementation of hook_node_info
  */
 function hosting_dns_node_info() {
-  $types["dns_server"] =  array(
-    "type" => 'dns_server', "name" => 'DNS server',
-    "module" => 'hosting_dns',
-    "has_title" => TRUE, "title_label" => t('Host name'), 
-    "description" => hosting_dns_help("dns_server"),
-    "has_body" => 0, "body_label" => '', "min_word_count" => 0);    
   $types["zone"] =  array(
     "type" => 'zone', "name" => 'DNS zone',
     "module" => 'hosting_dns',
@@ -235,38 +224,6 @@ function hosting_dns_node_info() {
     "description" => t("A DNS zone file is something really great and you all want one. (TODO: more documentation here)"),
     "has_body" => 0, "body_label" => '', "min_word_count" => 0);
   return $types;
-}
-
-
-/**
- * Implementation of hook_perm
- */
-function hosting_dns_perm() {
-  return array('create DNS server','view DNS server', 'edit DNS server', 'delete DNS server', 'administer DNS provisioning');
-}
-
-/**
- * Implementation of hook_access
- */
-function hosting_dns_access($op, $node) {
-  global $user;
-
-  switch($op) {
-    case 'create':
-      return user_access('create DNS server');
-      break;
-    case 'view':
-      return user_access('view DNS server');
-      break;
-    case 'update':
-      return user_access('edit DNS server');
-      break;
-    case 'delete':
-      return user_access('delete DNS server');
-      break;
-    default:
-      break;
-  }
 }
 
 /**
@@ -401,18 +358,6 @@ function hosting_dns_view($node, $teaser = FALSE, $page = FALSE) {
 
 function hosting_dns_zone_fields() {
   return array('origin' => t('Origin'), 'mbox' => t('Admin Email'), 'serial' => t('Serial'), 'refresh' => t('Refresh'), 'retry' => t('Retry'), 'expire' => t('Expire'), 'minimum' => t('Minimum TTL'), 'ttl' => t('Default TTL'), 'xfer' => t('XFER Access list'));
-}
-
-/**
- * Implementation of hook_hosting_summary.
- *
- * Provides a list of existing DNS servers for the hosting summary block.
- */
-function hosting_dns_hosting_summary() {
-  $summary = array();
-  $dns_servers = _hosting_get_dns_servers();
-  $summary['dns_servers'] = theme('item_list', array_map('_hosting_node_link', array_keys($dns_servers)), t('DNS Servers'));
-  return $summary;
 }
 
 /**
