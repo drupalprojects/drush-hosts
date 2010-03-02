@@ -305,24 +305,14 @@ class hostingService_DNS extends hostingService {
   }
 
   public function options($task_type, $ref_type, &$task) {
-    /*
-    $task->options['web_id'] = $this->server->nid;
-    $task->options['web_host'] = $this->server->title;
-
-    $task->options['web_ports'] = explode(",", $this->ports);
-    foreach($task->options['web_ports'] as $key=>$val) {
-      $val = trim($val);
-      $task->options['web_ports'][$key] = $val;
-      if(!is_numeric($val)) {
-        unset($task->options['web_ports'][$key]);
-      }
-    }
+    $task->options['dns_id'] = $this->server->nid;
+    $task->options['dns_host'] = $this->server->title;
 
    if ($task_type == 'verify' && $ref_type == 'platform') {
-      $task->options['web_group'] = $this->web_group;
-      $task->options['restart_cmd'] = $this->restart_cmd;
+      foreach (array('default_ip', 'ns', 'mbox', 'refresh', 'retry', 'expire', 'minimum', 'ttl', 'xfer') as $param) {;
+        $task->options[$param] = $this->$param;
+      }
     }
-    */
   }
 }
 
