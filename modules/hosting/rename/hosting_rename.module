@@ -42,6 +42,8 @@ function hosting_rename_theme($existing, $type, $theme, $path) {
 }
 
 function hosting_task_rename_form($node) {
+  $form['#node'] = $node;
+
   $form['new_name'] = array (
     '#title' => t('New site name'),
     '#type' => 'textfield',
