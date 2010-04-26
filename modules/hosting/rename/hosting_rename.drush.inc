@@ -18,7 +18,9 @@ function hosting_rename_post_hosting_rename_task($task, $data) {
   if ($task->ref->type == 'site') {
     $node = $task->ref;
     $node->title = $task->task_args['new_name'];
-    $node->revision = TRUE;
+    $node->aliases = $task->task_args['aliases'];
+    $node->redirection = $task->task_args['redirection'];
+    //$node->revision = TRUE;
     $node->changed = mktime();
     node_save($node);
   }
