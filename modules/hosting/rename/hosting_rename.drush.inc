@@ -20,7 +20,12 @@ function hosting_rename_post_hosting_rename_task($task, $data) {
     $node->title = $task->task_args['new_name'];
     $node->aliases = $task->task_args['aliases'];
     $node->redirection = $task->task_args['redirection'];
-    //$node->revision = TRUE;
+    /* @TODO fix Hosting so that it handles revisionning properly -
+     * currently setting this to TRUE inserts a new row into hosting_site
+     * with the new vid, and in most places we select from this table by nid
+     *
+     * $node->revision = TRUE;
+     */
     $node->changed = mktime();
     node_save($node);
   }
