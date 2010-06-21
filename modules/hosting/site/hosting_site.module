@@ -708,6 +708,13 @@ function hosting_site_get_backup($bid) {
 }
 
 /**
+ * Get a site backup record
+ */
+function hosting_site_get_backup_by_filename($filename) {
+  return db_fetch_array(db_query("SELECT bid, site, web_server, filename, description, timestamp FROM {hosting_site_backups} WHERE filename = '%s'", $filename));
+}
+
+/**
  * Retrieve a list of backup generated for a site.
  *
  * @param site

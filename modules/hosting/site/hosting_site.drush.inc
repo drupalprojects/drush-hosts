@@ -25,6 +25,11 @@ function drush_hosting_site_pre_hosting_task($task) {
     $backup = hosting_site_get_backup($task->task_args['bid']);
     $task->args[1] = $backup['filename'];
   }
+
+  if ($task->task_type == 'backup') {
+    //default is older than 7 days.
+    $task->options['delete_backups_older_than'] = mktime() - strtotime("-7 days"); 
+  }
 }
 
 
@@ -122,9 +127,21 @@ function hosting_site_post_hosting_delete_task($task, $data) {
  * This is needed to be able to restore.
  */
 function hosting_site_post_hosting_backup_task($task, $data) {
-  if ($data['context']['backup_file'] && $task->ref->type == 'site') {
+  if ($task->ref->type == 'site') {
     $platform = node_load($task->ref->platform);
-    hosting_site_add_backup($task->ref->nid, $platform->web_server, $data['context']['backup_file'], t('Generated on request'));
+    if ($data['context']['backup_file']) {
+      hosting_site_add_backup($task->ref->nid, $platform->web_server, $data['context']['backup_file'], t('Generated on request'));
+    }
+
+    // delete old backup files that have been removed.
+    if (is_array($data['context']['backup_files_deleted'])) {
+      foreach ($data['context']['backup_files_deleted'] as $filename) {
+        $backup = hosting_site_get_backup_by_filename($filename);
+        if (isset($backup['bid'])) {
+          hosting_site_delete_backup($backup['bid']);
+        } 
+      }
+    }
   }
 }
 
