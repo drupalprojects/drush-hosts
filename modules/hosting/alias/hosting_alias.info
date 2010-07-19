@@ -2,5 +2,8 @@ name = Site aliases
 description = Maintain domain aliases for sites.
 package = Hosting
 dependencies[] = hosting_site
-
+dependencies[] = features
+features[dummy][] = dummy
+spaces[types][] = site
+spaces[types][] = client
 core = 6.x

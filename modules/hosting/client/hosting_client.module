@@ -795,4 +795,6 @@ function hosting_client_views_api() {
     'api' => 2, 
     'path' => drupal_get_path('module', 'hosting_client'),
   );
-} 
+}
+
+include_once('hosting.spaces.inc');
