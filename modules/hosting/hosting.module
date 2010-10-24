@@ -833,6 +833,13 @@ function hosting_settings() {
       '#default_value' => variable_get('hosting_cron_use_backend', TRUE),
     );
   }
+  $form['hosting_split_logfiles'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Split Apache log files into one per site?'),
+    '#description' => t('One logfile per site instead of all of them in the one main logfile.<br />
+                         Note: you must have a valid Log directory configured in your web server node for this to work.'),
+    '#default_value' => variable_get('hosting_split_logfiles', FALSE),
+  );
   return system_settings_form($form);
 }
 

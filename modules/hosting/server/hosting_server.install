@@ -87,6 +87,11 @@ function hosting_server_schema() {
         'unsigned' => TRUE,
         'not null' => FALSE,
       ),
+      'log_directory' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ),
       'available' => array(
         'type' => 'int',
         'size' => 'small', 
@@ -207,5 +212,18 @@ function hosting_server_update_6004() {
 function hosting_server_update_6005() {
   $ret = array();
   db_rename_table($ret, 'hosting_server_ip', 'hosting_ip_addresses');
+  return $ret;
+}
+
+/**
+ * Add log_directory field
+ */
+function hosting_server_update_6006() {
+  db_add_field($ret, 'hosting_service', 'log_directory', array(
+    'type' => 'text',
+    'syze' => 'big',
+    'default' => '',
+    'not null' => FALSE
+  ));
   return $ret;
 }

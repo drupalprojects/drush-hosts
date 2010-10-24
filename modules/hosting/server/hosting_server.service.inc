@@ -7,6 +7,7 @@ class hostingService {
 
   protected $has_restart_cmd = FALSE;
   protected $has_port = FALSE;
+  protected $has_log_directory = FALSE;
 
   function __construct($node, $values = null) {
     self::save($node);
@@ -18,7 +19,7 @@ class hostingService {
   }
 
   public function load() {
-    $this->mergeData("SELECT port, restart_cmd, available FROM {hosting_service} WHERE vid = %d AND type = '%s'", $this->server->vid, $this->type);
+    $this->mergeData("SELECT port, restart_cmd, log_directory, available FROM {hosting_service} WHERE vid = %d AND type = '%s'", $this->server->vid, $this->type);
   }
 
   protected function mergeData($query) {
@@ -52,9 +53,13 @@ class hostingService {
     return 0;
   }
 
+  public function default_log_directory() {
+    return '';
+  }
+
   public function insert() {
-    db_query("INSERT INTO {hosting_service} (nid, vid, service, type, port, restart_cmd, available) VALUES (%d, %d, '%s', '%s', %d, '%s', %d)",
-      $this->server->nid, $this->server->vid, $this->service, $this->type, $this->port, $this->restart_cmd, $this->available);
+    db_query("INSERT INTO {hosting_service} (nid, vid, service, type, port, restart_cmd, log_directory, available) VALUES (%d, %d, '%s', '%s', %d, '%s', '%s', %d)",
+      $this->server->nid, $this->server->vid, $this->service, $this->type, $this->port, $this->restart_cmd, $this->log_directory, $this->available);
   }
 
   public function update() {
@@ -106,6 +111,21 @@ class hostingService {
         '#value' => '0',
       );
     } 
+
+    if ($this->has_log_directory) {
+      $form['log_directory'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Logfile directory'),
+          '#description' => t('The directory to write log files to.'),
+          '#default_value' => (!is_null($this->log_directory)) ? $this->log_directory : $this->default_log_directory(),
+          '#size' => 40,
+          '#maxlength' => 255,
+          '#weight' => -9,
+      );
+    }
+    else {
+      $form['log_directory'] = array('#type' => 'value', '#value' => null);
+    }
  
   }
 
@@ -126,6 +146,13 @@ class hostingService {
         '#value' => filter_xss($this->port),
       );
     } 
+    if ($this->log_directory) {
+      $render['log_directory'] = array(
+        '#type' => 'item',
+        '#title' => t('Log directory'),
+        '#value' => filter_xss($this->log_directory),
+      );
+    }
   }
 
 
@@ -148,6 +175,10 @@ class hostingService {
     if ($this->has_port) {
       $task->context_options[$this->service . '_port'] = $this->port;
     }
+
+    if ($this->has_log_directory) {
+      $task->context_options[$this->service . '_log_directory'] = $this->log_directory;
+    }
   }
 
   public function context_import($context) {
@@ -159,6 +190,10 @@ class hostingService {
 
     if ($this->has_restart_cmd) {
       $this->restart_cmd = $context->{$this->service . '_restart_cmd'};
+    }
+
+    if ($this->has_log_directory) {
+      $this->log_directory = $context->{$this->service . '_log_directory'};
     }
   }
 
