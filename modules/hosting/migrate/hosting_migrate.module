@@ -77,6 +77,16 @@ function hosting_task_migrate_form_validate($form, &$form_state) {
     }
   }
 
+  if ($form_state['values']['parameters']['aliases']) {
+    $aliases = explode("\n", $form_state['values']['parameters']['aliases']);
+    foreach ($aliases as $alias) {
+      if ($alias = trim($alias)) {
+        if (!hosting_domain_allowed($alias, (array) $node->nid)) {
+          form_set_error('aliases', t('The domain name @alias is already in use', array('@alias' => $alias)));
+        }
+      }
+    }
+  }
   if ($form_state['values']['parameters']['target_platform'] != $site->platform) {
     $migrate_possible = TRUE;
   }
@@ -110,7 +120,7 @@ function hosting_migrate_theme($existing, $type, $theme, $path) {
 function hosting_task_migrate_form($node) {
   $node->check_profile_migrations =  TRUE;
   $valid_options = hosting_site_available_options($node);
-
+  $form['#node'] = $node;
   $form['new_uri'] = array (
     '#title' => t('Domain name'),
     '#description' => t("Changing the domain name when migrating effectively 'renames' the site."),
@@ -119,6 +129,12 @@ function hosting_task_migrate_form($node) {
     '#weight' => '-1',
     '#default_value' => strtolower(trim($node->title))
   );
+
+  // Provide the option to set aliases if that feature is enabled
+  if (module_exists('hosting_alias')) {
+    hosting_alias_form_data($form);
+  }
+
 
   $db_servers = hosting_get_servers('db');
   if (sizeof($db_servers) > 1) {

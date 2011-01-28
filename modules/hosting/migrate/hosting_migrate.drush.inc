@@ -13,6 +13,11 @@ function drush_hosting_migrate_pre_hosting_task($task) {
       $task->args[3] = '@' . $task->task_args['new_uri'];
     }
 
+    if (module_exists('hosting_alias')) {
+      $task->options['aliases'] = str_replace("\n", ",", $task->task_args['aliases']);
+      $task->options['redirection'] = $task->task_args['redirection'];
+    }
+
     if ($site->db_server != $task->task_args['new_db_server']) {
       $task->options['new_db_server'] = hosting_context_name($task->task_args['new_db_server']);
     }
@@ -59,6 +64,9 @@ function hosting_migrate_post_hosting_migrate_task($task, $data) {
       $site->title = strtolower(trim($task->task_args['new_uri']));
       hosting_context_register($site->nid, $site->title);
     }
+
+    $site->aliases = $task->task_args['aliases'];
+    $site->redirection = $task->task_args['redirection'];
 
     if ($site->db_server != $task->task_args['new_db_server']) {
       $site->db_server = $task->task_args['new_db_server'];
