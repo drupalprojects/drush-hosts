@@ -81,12 +81,13 @@ function hosting_task_migrate_form_validate($form, &$form_state) {
     $aliases = explode("\n", $form_state['values']['parameters']['aliases']);
     foreach ($aliases as $alias) {
       if ($alias = trim($alias)) {
-        if (!hosting_domain_allowed($alias, (array) $node->nid)) {
+        if (!hosting_domain_allowed($alias, (array) $site)) {
           form_set_error('aliases', t('The domain name @alias is already in use', array('@alias' => $alias)));
         }
       }
     }
   }
+
   if ($form_state['values']['parameters']['target_platform'] != $site->platform) {
     $migrate_possible = TRUE;
   }
