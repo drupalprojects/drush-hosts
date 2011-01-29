@@ -28,6 +28,20 @@ function hosting_task_clone_form_validate($form, &$form_state) {
   else {
     hosting_task_migrate_form_validate($form, $form_state);
   }
+  // Although the following is more or less the same in the hosting_task_migrate_form_validate(),
+  // it's repeated here but the difference is we check if the alias is already in use *anywhere*, 
+  // rather than make an exception for the current site node (which is allowed to retain its aliases)
+  if ($form_state['values']['parameters']['aliases']) {
+    $aliases = explode("\n", $form_state['values']['parameters']['aliases']);
+    foreach ($aliases as $alias) {
+      if ($alias = trim($alias)) {
+        if (!hosting_domain_allowed($alias)) {
+          form_set_error('aliases', t('The domain name @alias is already in use', array('@alias' => $alias)));
+        }
+      }
+    }
+  }
+
 }
 
 function hosting_clone_theme($existing, $type, $theme, $path) {
