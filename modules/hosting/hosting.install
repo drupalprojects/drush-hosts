@@ -32,8 +32,8 @@ function hosting_schema() {
     'primary key' => array('nid'),
     'unique keys' => array(
       'name'     => array('name')
-    ),    
-  
+    ),
+
   );
   return $schema;
 }
@@ -49,7 +49,7 @@ function hosting_update_1() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Update function to remove unused table
  */
 function hosting_update_2() {
@@ -60,7 +60,7 @@ function hosting_update_2() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Hide hostmaster and hostslave profiles.
  */
 function hosting_update_3() {
@@ -108,7 +108,7 @@ function hosting_update_6001() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * no-op - this used to verify one platform and all sites but breaks
  * major upgrades.
  */
@@ -118,7 +118,7 @@ function hosting_update_6002() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Lower the default amount of concurrent tasks.
  */
 function hosting_update_6003() {
@@ -129,7 +129,7 @@ function hosting_update_6003() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Stricter initial permissions for the anonymous user.
  */
 function hosting_update_6004() {
@@ -144,7 +144,7 @@ function hosting_update_6004() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Move some menu items to the primary links menu.
  */
 function hosting_update_6005() {
@@ -174,7 +174,7 @@ function hosting_update_6005() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Move the platforms into primary links.
  */
 function hosting_update_6006() {
@@ -196,7 +196,7 @@ function hosting_update_6006() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Update the default db_server now that we've merged the webserver and dbserver nodes
  * See http://drupal.org/node/731550
  */
@@ -208,14 +208,14 @@ function hosting_update_6007() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Add hosting_context table to map alias names.
  */
 function hosting_update_6008() {
   $return = array();
 
   if (!variable_get('hosting_update_6008_run', false)) {
-    
+
     db_create_table($return, 'hosting_context', array(
       'fields' => array(
         'nid' => array(
@@ -233,7 +233,7 @@ function hosting_update_6008() {
       'primary key' => array('nid'),
       'unique keys' => array(
         'name'     => array('name')
-      ),    
+      ),
     ));
 
     variable_set('hosting_update_6008_run', true);
@@ -264,7 +264,7 @@ function hosting_update_6008() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Fix the reference to the master server so that it no longer points at localhost.
  */
 function hosting_update_6009() {
@@ -283,7 +283,7 @@ function hosting_update_6009() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Add url aliases for the context names that are registered.
  */
 function hosting_update_6010() {
@@ -305,7 +305,7 @@ function hosting_update_6010() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Clients and packages were imported as belonging to the anonymous user. Reassign them to the admin user.
  */
 function hosting_update_6011() {
@@ -334,7 +334,7 @@ function hosting_update_6012() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Add a permission allowing users to view the 'site disabled' message, which got
  * lost when 'access content' permission was revoked a while ago.
  */
@@ -349,7 +349,7 @@ function hosting_update_6013() {
 
 /**
  * Implementation of hook_update_N().
- * 
+ *
  * Restore proper weight to the hosting module.
  *
  * For some obscure reason, the weight is 10 which makes its updates run
@@ -361,4 +361,42 @@ function hosting_update_6014() {
   return $ret;
 }
 
+/**
+ * Implementation of hook_update_N().
+ *
+ * Delete URL aliases for sites that have been deleted.
+ *
+ * Ideally we'd do this in a single DB query, but there isn't a nice performant
+ * way to do it, so we do more DB queries instead of using potentially a lot of
+ * memory. Basically this may take a long time to run, but it shouldn't run out
+ * of resources doing so.
+ */
+function hosting_update_6015(&$sandbox) {
+  $ret = array();
 
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_pid'] = 0;
+    $sandbox['max'] = db_result(db_query('SELECT COUNT(pid) FROM {url_alias}'));
+  }
+
+  $aliases = db_query_range("SELECT pid, src, dst FROM {url_alias} WHERE dst LIKE 'hosting/c/%' AND pid > %d ORDER BY pid ASC", $sandbox['current_pid'], 0, 50);
+
+  while ($alias = db_fetch_object($aliases)) {
+    // Get the node ID for the alias.
+    $nid = preg_replace('#^node/#', '', $alias->src);
+    if (is_numeric($nid)) {
+      // Check to see if the corresponding context has been deleted.
+      if (!db_result(db_query('SELECT COUNT(nid) FROM {hosting_context} WHERE nid = %d', $nid))) {
+        db_query('DELETE FROM {url_alias} WHERE pid = %d', $alias->pid);
+      }
+    }
+
+    $sandbox['progress']++;
+    $sandbox['current_pid'] = $alias->pid;
+  }
+
+  $ret['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+
+  return $ret;
+}
