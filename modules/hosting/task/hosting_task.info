@@ -3,3 +3,4 @@ description = Allow Hostmaster to keep track of tasks that have been processed o
 package = Hosting
 dependencies[] = hosting
 core = 6.x
+version = HOSTMASTER_VERSION

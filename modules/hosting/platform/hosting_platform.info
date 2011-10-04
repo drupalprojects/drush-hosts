@@ -5,3 +5,4 @@ dependencies[] = hosting
 dependencies[] = hosting_package
 
 core = 6.x
+version = HOSTMASTER_VERSION

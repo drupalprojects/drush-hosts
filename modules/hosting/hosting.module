@@ -1,12 +1,14 @@
 <?php
 
+define('HOSTMASTER_VERSION', '6.x-1.x');
+
 /**
  * @file
  *   Hosting module.
  *
  * Contains just about all the interface magic of hostmaster.
  */
- 
+
 /**
  * Not split for performance reasons. Just to keep code together.
  */

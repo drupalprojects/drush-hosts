@@ -3,3 +3,4 @@ description = Allow the hosting system to cron all the installed sites on a sche
 package = Hosting
 dependencies[] = hosting
 core = 6.x
+version = HOSTMASTER_VERSION
