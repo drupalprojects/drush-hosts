@@ -47,12 +47,13 @@ function hosts_drush_command() {
 function drush_hosts() {
   // This command must be run as root
   if (posix_getuid() > 0) {
+    $home = getenv('HOME');
     $options_array = drush_redispatch_get_options();
     $options_string = '';
     foreach ($options_array as $option => $value) {
       $options_string .= ' --' . $option . '=' . $value;
     }
-    drush_shell_exec_interactive("sudo -E drush hosts" . $options_string);
+    drush_shell_exec_interactive("sudo env HOME=$home drush hosts" . $options_string);
   }
   else {
     $hosts_file = file('/etc/hosts', FILE_IGNORE_NEW_LINES);
