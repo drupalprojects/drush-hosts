@@ -44,7 +44,7 @@ function hosts_drush_command() {
 /**
  * Add an entry to /etc/hosts.
  */
-function drush_vagrant_hosts() {
+function drush_hosts() {
   // This command must be run as root
   if (posix_getuid() > 0) {
     $options_array = drush_redispatch_get_options();
