@@ -45,7 +45,7 @@ function hosts_drush_command() {
  * Add an entry to /etc/hosts.
  */
 function drush_hosts() {
-  // This command must be run as root
+  // This command must be run as root, if not already try to run it through sudo.
   if (posix_getuid() > 0) {
     $home = getenv('HOME');
     $options_array = drush_redispatch_get_options();
@@ -81,6 +81,7 @@ function drush_hosts() {
       return;
     }
 
+    // Handle --purge option
     if ($purge = drush_get_option('purge', FALSE)) {
       if (!drush_confirm('Remove all Drush Hosts entries from /etc/hosts?')) { 
         drush_user_abort();
@@ -142,6 +143,7 @@ function drush_hosts() {
       }
     }
 
+    // Write the updated hosts file
     array_splice($hosts_file, $hosts_begin + 1 , ($hosts_end - $hosts_begin) - 1, $hosts);
 
     $output = implode("\n", $hosts_file) . "\n";
