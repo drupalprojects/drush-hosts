@@ -53,6 +53,7 @@ function drush_hosts() {
     foreach ($options_array as $option => $value) {
       $options_string .= ' --' . $option . '=' . $value;
     }
+    drush_print(dt('Enter your password for sudo to add entries to your /etc/hosts file.'));
     drush_shell_exec_interactive("sudo env HOME=$home drush hosts" . $options_string);
   }
   else {
