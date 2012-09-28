@@ -18,20 +18,24 @@ function hosts_drush_command() {
     'description' => dt('Manage entries in /etc/hosts. (Requires sudo password)'),
     'options' => array(
       'ip' => array(
-        'description' => dt('The IP address of the server or site.')),
+        'description' => dt('The IP address of the server or site.')
+      ),
       'fqdn' => array(
         'description' => dt('A comma-delimited list of domain names.'),
-        'required' => TRUE,),
+        'required' => TRUE,
+      ),
       'remove' => array(
-        'description' => dt('Remove an IP address or domain(s).')),
+        'description' => dt('Remove an IP address or domain(s).')
+      ),
       'purge' => array(
-        'description' => dt('Remove all entries in /etc/hosts made by Drush Hosts.')),
+        'description' => dt('Remove all entries in /etc/hosts made by Drush Hosts.')
+      ),
     ),
     'examples' => array(
       'drush hs --ip=192.168.22.13 --fqdn=foo.com,bar.net' => dt('Add an entry to /etc/hosts, so that foo.com and bar.net both point to the IP address 192.168.22.13.'),
       'drush hs --ip=192.168.22.13 --fqdn=bar.com --remove' => dt('Remove the domain "bar.com" from the entry in /etc/hosts for IP address 192.168.22.13.'),
       'drush hs --ip=192.168.22.13 --remove' => dt('Remove the entire entry in /etc/hosts for IP address 192.168.22.13.'),
-      ),
+    ),
     'strict-option-handling' => TRUE,
     'allow-additional-options' => TRUE,
     'aliases' => array('hs'),
@@ -84,7 +88,7 @@ function drush_hosts() {
 
     // Handle --purge option
     if ($purge = drush_get_option('purge', FALSE)) {
-      if (!drush_confirm('Remove all Drush Hosts entries from /etc/hosts?')) { 
+      if (!drush_confirm('Remove all Drush Hosts entries from /etc/hosts?')) {
         drush_user_abort();
         return;
       }
@@ -145,12 +149,11 @@ function drush_hosts() {
     }
 
     // Write the updated hosts file
-    array_splice($hosts_file, $hosts_begin + 1 , ($hosts_end - $hosts_begin) - 1, $hosts);
+    array_splice($hosts_file, $hosts_begin + 1, ($hosts_end - $hosts_begin) - 1, $hosts);
 
     $output = implode("\n", $hosts_file) . "\n";
     $result = file_put_contents('/etc/hosts', $output);
 
     return $result;
   }
-
 }
