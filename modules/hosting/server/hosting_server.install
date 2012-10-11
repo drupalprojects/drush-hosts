@@ -217,7 +217,7 @@ function hosting_server_update_6005() {
 }
 
 /**
- * Rename the IP address table so that sites can also use it.
+ * Add a new field to support symlinking site directories.
  */
 function hosting_server_update_6006() {
   $ret = array();
