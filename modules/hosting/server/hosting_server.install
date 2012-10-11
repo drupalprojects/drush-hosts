@@ -93,10 +93,11 @@ function hosting_server_schema() {
         'not null' => TRUE,
         'default' => 1,
       ),
-      'symlink_source' => array(
+      'site_symlinks' => array(
         'type' => 'text',
         'size' => 'big',
-        'not null' => FALSE,
+        'default' => '',
+        'not null' => TRUE,
       ),
     ),
     'indexes' => array(
@@ -220,10 +221,11 @@ function hosting_server_update_6005() {
  */
 function hosting_server_update_6006() {
   $ret = array();
-  db_add_field($ret, 'hosting_service', 'symlink_source',array(
+  db_add_field($ret, 'hosting_service', 'site_symlinks',array(
     'type' => 'text',
     'size' => 'big',
-    'not null' => FALSE,
+    'default' => '',
+    'not null' => TRUE,
   ));
   return $ret;
 }

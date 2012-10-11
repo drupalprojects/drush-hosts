@@ -7,7 +7,7 @@ class hostingService {
 
   protected $has_restart_cmd = FALSE;
   protected $has_port = FALSE;
-  protected $supports_symlinks = FALSE;
+  protected $has_site_symlinks = FALSE;
 
   function __construct($node, $values = null) {
     self::save($node);
@@ -19,12 +19,12 @@ class hostingService {
   }
 
   // Is this req'd? There isn't one for has_restart_cmd()...
-  public function supports_symlinks() {
-    return $this->supports_symlinks;
+  public function has_site_symlinks() {
+    return $this->has_site_symlinks;
   }
 
   public function load() {
-    $this->mergeData("SELECT port, restart_cmd, available, symlink_source FROM {hosting_service} WHERE vid = %d AND type = '%s'", $this->server->vid, $this->type);
+    $this->mergeData("SELECT port, restart_cmd, available, site_symlinks FROM {hosting_service} WHERE vid = %d AND type = '%s'", $this->server->vid, $this->type);
   }
 
   protected function mergeData($query) {
@@ -58,13 +58,13 @@ class hostingService {
     return 0;
   }
 
-  public function default_symlink_source() {
+  public function default_site_symlinks() {
     return '';
   }
 
   public function insert() {
-    db_query("INSERT INTO {hosting_service} (nid, vid, service, type, port, restart_cmd, available, symlink_source) VALUES (%d, %d, '%s', '%s', %d, '%s', %d, '%s')",
-      $this->server->nid, $this->server->vid, $this->service, $this->type, $this->port, $this->restart_cmd, $this->available, $this->symlink_source);
+    db_query("INSERT INTO {hosting_service} (nid, vid, service, type, port, restart_cmd, available, site_symlinks) VALUES (%d, %d, '%s', '%s', %d, '%s', %d, '%s')",
+      $this->server->nid, $this->server->vid, $this->service, $this->type, $this->port, $this->restart_cmd, $this->available, $this->site_symlinks);
   }
 
   public function update() {
@@ -117,13 +117,13 @@ class hostingService {
       );
     }
 
-    if ($this->supports_symlinks) {
-      $form['symlink_source'] = array(
+    if ($this->has_site_symlinks) {
+      $form['site_symlinks'] = array(
         '#type' => 'textfield',
         '#title' => t('Symlink source'),
         '#required' => FALSE,
         '#size' => 40,
-        '#default_value' => ($this->symlink_source) ? $this->symlink_source : $this->default_symlink_source(),
+        '#default_value' => ($this->site_symlinks) ? $this->site_symlinks : $this->default_site_symlinks(),
         '#description' => t("(Optional) The directory in which to install sites, and then symlink from."),
         '#maxlength' => 255,
       );
@@ -132,6 +132,14 @@ class hostingService {
   }
 
   public function view(&$render) {
+    if ($this->has_site_symlinks && $this->site_symlinks != '') {
+      $render['site_symlinks'] = array(
+        '#type' => 'item',
+        '#title' => t('Site symlinks source'),
+        '#value' => filter_xss($this->site_symlinks),
+      );
+    }
+
     if ($this->has_restart_cmd) {
       $render['restart_cmd'] = array(
         '#type' => 'item',
@@ -149,13 +157,6 @@ class hostingService {
       );
     }
 
-    if ($this->supports_symlinks) {
-      $render['symlink_source'] = array(
-        '#type' => 'item',
-        '#title' => t('Symlink source'),
-        '#value' => filter_xss($this->symlink_source),
-      );
-    }
   }
 
 
@@ -180,8 +181,8 @@ class hostingService {
       $task->context_options[$this->service . '_port'] = $this->port;
     }
 
-    if ($this->supports_symlinks) {
-      $task->context_options[$this->service . '_symlink_source'] = $this->symlink_source;
+    if ($this->has_site_symlinks) {
+      $task->context_options[$this->service . '_site_symlinks'] = $this->site_symlinks;
     }
 
   }
@@ -198,8 +199,8 @@ class hostingService {
     }
 
     // Is order important here? has_port and has_restart_cmd are reversed from their usual order...
-    if ($this->supports_symlinks) {
-      $this->symlink_source = $context->{$this->service . '_symlink_source'};
+    if ($this->has_site_symlinks) {
+      $this->site_symlinks = $context->{$this->service . '_site_symlinks'};
     }
 
 
