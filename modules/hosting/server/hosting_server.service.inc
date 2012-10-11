@@ -124,9 +124,8 @@ class hostingService {
         '#required' => FALSE,
         '#size' => 40,
         '#default_value' => ($this->symlink_source) ? $this->symlink_source : $this->default_symlink_source(),
-        '#description' => t("The directory in which to install sites, and then symlink from."),
+        '#description' => t("(Optional) The directory in which to install sites, and then symlink from."),
         '#maxlength' => 255,
-        '#weight' => -9,
       );
     }
  
