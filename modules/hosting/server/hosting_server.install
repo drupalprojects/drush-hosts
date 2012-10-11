@@ -93,6 +93,11 @@ function hosting_server_schema() {
         'not null' => TRUE,
         'default' => 1,
       ),
+      'symlink_source' => array(
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ),
     ),
     'indexes' => array(
       'vid' => array('vid'),
@@ -207,5 +212,18 @@ function hosting_server_update_6004() {
 function hosting_server_update_6005() {
   $ret = array();
   db_rename_table($ret, 'hosting_server_ip', 'hosting_ip_addresses');
+  return $ret;
+}
+
+/**
+ * Rename the IP address table so that sites can also use it.
+ */
+function hosting_server_update_6006() {
+  $ret = array();
+  db_add_field($ret, 'hosting_service', 'symlink_source',array(
+    'type' => 'text',
+    'size' => 'big',
+    'not null' => FALSE,
+  ));
   return $ret;
 }
