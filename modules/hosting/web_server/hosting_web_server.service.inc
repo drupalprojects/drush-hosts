@@ -7,6 +7,7 @@ class hostingService_http extends hostingService {
 
 class hostingService_http_public extends hostingService_http {
   protected $has_port = TRUE;
+  protected $supports_symlinks = TRUE;
 
   function default_port() {
     return 80;
