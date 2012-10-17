@@ -61,30 +61,9 @@ function drush_hosts() {
     drush_shell_exec_interactive("sudo env HOME=$home drush hosts" . $options_string);
   }
   else {
-    $hosts_file = file('/etc/hosts', FILE_IGNORE_NEW_LINES);
 
-    // Find markers that delineate our block of entries
-    foreach ($hosts_file as $count => $line) {
-      if (strpos($line, HOSTS_BEGIN_MARKER) !== FALSE) {
-        $hosts_begin = $count;
-      }
-      if (strpos($line, HOSTS_END_MARKER) !== FALSE) {
-        $hosts_end = $count;
-      }
-    }
-    // Add markers to end of file if none were found
-    if (!isset($hosts_begin) && !isset($hosts_end)) {
-      $hosts_begin = count($hosts_file);
-      $hosts_file[] = HOSTS_BEGIN_MARKER;
-      $hosts_end = count($hosts_file);
-      $hosts_file[] = HOSTS_END_MARKER;
-    }
 
-    // Sanity check
-    if (!($hosts_end > $hosts_begin)) {
-      drush_set_error('ERROR: Error parsing hosts file.');
-      return;
-    }
+    $hosts = _drush_hosts_get_hosts();
 
     // Handle --purge option
     if ($purge = drush_get_option('purge', FALSE)) {
@@ -92,9 +71,8 @@ function drush_hosts() {
         drush_user_abort();
         return;
       }
-      array_splice($hosts_file, $hosts_begin, ($hosts_end - $hosts_begin) + 1, NULL);
-      $output = implode("\n", $hosts_file) . "\n";
-      $result = file_put_contents('/etc/hosts', $output);
+      array_splice($hosts['file'], $hosts['begin'], ($hosts['end'] - $hosts['begin']) + 1, NULL);
+      _drush_hosts_set_hosts($hosts);
       return;
     }
 
@@ -109,10 +87,10 @@ function drush_hosts() {
     }
 
     // Extract our entries
-    $hosts = array_slice($hosts_file, $hosts_begin + 1, ($hosts_end - $hosts_begin) - 1);
+    $entries = array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
 
     // Find the IP address
-    foreach ($hosts as $count => $line) {
+    foreach ($entries as $count => $line) {
       if (strpos($line, $ip_addr) !== FALSE) {
         $ip_line = $count;
       }
@@ -126,34 +104,74 @@ function drush_hosts() {
       }
       elseif (count($domains) > 0) {
         foreach ($domains as $domain) {
-          $hosts[$ip_line] = str_replace(' ' . $domain, '', $hosts[$ip_line]);
+          $entries[$ip_line] = str_replace(' ' . $domain, '', $entries[$ip_line]);
         }
         // If there are no domains left on a line, remove it
-        if (trim($hosts[$ip_line]) == $ip_addr) {
-          unset($hosts[$ip_line]);
+        if (trim($entries[$ip_line]) == $ip_addr) {
+          unset($entries[$ip_line]);
         }
       }
       else {
-        unset($hosts[$ip_line]);
+        unset($entries[$ip_line]);
       }
     }
     // Add an IP address and/or domain
     else {
       if (!isset($ip_line)) {
-        $hosts[] = $ip_addr . "   ";
-        $ip_line = count($hosts) - 1;
+        $entries[] = $ip_addr . "   ";
+        $ip_line = count($entries) - 1;
       }
       foreach ($domains as $domain) {
-        $hosts[$ip_line] = $hosts[$ip_line] . ' ' . $domain;
+        $entries[$ip_line] = $entries[$ip_line] . ' ' . $domain;
       }
     }
 
     // Write the updated hosts file
-    array_splice($hosts_file, $hosts_begin + 1, ($hosts_end - $hosts_begin) - 1, $hosts);
+    array_splice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1, $entries);
 
-    $output = implode("\n", $hosts_file) . "\n";
-    $result = file_put_contents('/etc/hosts', $output);
+    $result = _drush_hosts_set_hosts($hosts);
 
     return $result;
   }
+}
+
+function _drush_hosts_get_hosts() {
+
+  $hosts = array();
+
+  $hosts['file'] = file('/etc/hosts', FILE_IGNORE_NEW_LINES);
+
+    // Find markers that delineate our block of entries
+    foreach ($hosts['file'] as $count => $line) {
+      if (strpos($line, HOSTS_BEGIN_MARKER) !== FALSE) {
+        $hosts['begin'] = $count;
+      }
+      if (strpos($line, HOSTS_END_MARKER) !== FALSE) {
+        $hosts['end'] = $count;
+      }
+    }
+    // Add markers to end of file if none were found
+    if (!isset($hosts['begin']) && !isset($hosts['end'])) {
+      $hosts['begin'] = count($hosts['file']);
+      $hosts['file'][] = HOSTS_BEGIN_MARKER;
+      $hosts['end'] = count($hosts['file']);
+      $hosts['file'][] = HOSTS_END_MARKER;
+    }
+
+    // Sanity check
+    if (!($hosts['end'] > $hosts['begin'])) {
+      drush_set_error('ERROR: Error parsing hosts file.');
+      return FALSE;
+    }
+
+  return $hosts;
+
+}
+
+function _drush_hosts_set_hosts($hosts) {
+
+  $output = implode("\n", $hosts['file']) . "\n";
+  $result = file_put_contents('/etc/hosts', $output);
+  return $result;
+
 }
