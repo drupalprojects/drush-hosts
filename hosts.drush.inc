@@ -87,21 +87,22 @@ function drush_hosts() {
  * Add an entry to /etc/hosts.
  */
 function drush_hosts_add() {
+  if (!($ip_addr = drush_get_option('ip'))) {
+    drush_set_error('ERROR: Could not find an IP address to add. Try specifying one with the "--ip" option, or using a VM alias.');
+    return;
+  }
+  if (!($domains = drush_get_option_list('fqdn')) && !($remove)) {
+    drush_set_error('ERROR: Could not find any domains to add. Try specifing one or more with the "--fqdn" option.');
+    return;
+  }
+
   // This command must be run as root, if not already try to run it through sudo.
   if (posix_getuid() > 0) {
     _drush_hosts_run_as_root('hosts-add');
   }
   else {
-    $hosts = _drush_hosts_get_hosts();
 
-    if (!($ip_addr = drush_get_option('ip'))) {
-      drush_set_error('ERROR: Could not find an IP address to add. Try specifying one with the "--ip" option, or using a VM alias.');
-      return;
-    }
-    if (!($domains = drush_get_option_list('fqdn')) && !($remove)) {
-      drush_set_error('ERROR: Could not find any domains to add. Try specifing one or more with the "--fqdn" option.');
-      return;
-    }
+    $hosts = _drush_hosts_get_hosts();
 
     // Extract our entries
     $entries = array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
@@ -136,6 +137,13 @@ function drush_hosts_add() {
  * Add an entry to /etc/hosts.
  */
 function drush_hosts_remove() {
+  if (!($ip_addr = drush_get_option('ip'))) {
+    drush_set_error('ERROR: Could not find an IP address to remove. Try specifying one with the "--ip" option, or using a VM alias.');
+    return;
+  }
+
+  $domains = drush_get_option_list('fqdn');
+
   // This command must be run as root, if not already try to run it through sudo.
   if (posix_getuid() > 0) {
     _drush_hosts_run_as_root('hosts-remove');
@@ -154,12 +162,6 @@ function drush_hosts_remove() {
       _drush_hosts_set_hosts($hosts);
       return;
     }
-
-    if (!($ip_addr = drush_get_option('ip'))) {
-      drush_set_error('ERROR: Could not find an IP address to remove. Try specifying one with the "--ip" option, or using a VM alias.');
-      return;
-    }
-    $domains = drush_get_option_list('fqdn');
 
     // Extract our entries
     $entries = array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
@@ -195,16 +197,13 @@ function drush_hosts_remove() {
     $result = _drush_hosts_set_hosts($hosts);
 
     return $result;
-
   }
-
 }
 
 /**
  * Get all entries in /etc/hosts.
  */
 function _drush_hosts_get_hosts() {
-
   $hosts = array();
 
   $hosts['file'] = file('/etc/hosts', FILE_IGNORE_NEW_LINES);
@@ -233,15 +232,12 @@ function _drush_hosts_get_hosts() {
     }
 
   return $hosts;
-
 }
 
 function _drush_hosts_set_hosts($hosts) {
-
   $output = implode("\n", $hosts['file']) . "\n";
   $result = file_put_contents('/etc/hosts', $output);
   return $result;
-
 }
 
 function _drush_hosts_run_as_root($command) {
