@@ -78,7 +78,17 @@ function hosts_drush_command() {
  */
 function drush_hosts() {
 
-  //PLACEHOLDER: List entries here
+  $hosts = _drush_hosts_get_hosts();
+
+  // Extract our entries
+  $entries = array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
+
+  if (drush_get_option('all', FALSE)) {
+    drush_print(implode("\n", $hosts['file']));
+  }
+  else {
+    drush_print(implode("\n", $entries));
+  }
 
 }
 
