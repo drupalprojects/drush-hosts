@@ -81,7 +81,7 @@ function drush_hosts() {
   $hosts = _drush_hosts_get_hosts();
 
   // Extract our entries
-  $entries = array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
+  $entries =  _drush_hosts_get_entries($hosts);
 
   if (drush_get_option('all', FALSE)) {
     drush_print(implode("\n", $hosts['file']));
@@ -115,27 +115,24 @@ function drush_hosts_add() {
     $hosts = _drush_hosts_get_hosts();
 
     // Extract our entries
-    $entries = array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
+    $entries =  _drush_hosts_get_entries($hosts);
 
     // Find the IP address
-    foreach ($entries as $count => $line) {
-      if (strpos($line, $ip_addr) !== FALSE) {
-        $ip_line = $count;
+    if ($ip_line = _drush_hosts_get_line_by_ip($entries, $ip_addr)) {
+      // Add an IP address and/or domain
+      if (!$ip_line) {
+        $entries[] = $ip_addr . "   ";
+        $ip_line = count($entries) - 1;
+      }
+      else {
+        // TODO: don't add duplicate domains
+        foreach ($domains as $domain) {
+          $entries[$ip_line] = $entries[$ip_line] . ' ' . $domain;
+        }
       }
     }
-
-    // Add an IP address and/or domain
-    if (!isset($ip_line)) {
-      $entries[] = $ip_addr . "   ";
-      $ip_line = count($entries) - 1;
-    }
-    foreach ($domains as $domain) {
-      $entries[$ip_line] = $entries[$ip_line] . ' ' . $domain;
-    }
-
     // Write the updated hosts file
-    array_splice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1, $entries);
-
+    $hosts = _drush_hosts_update_hosts_entries($hosts, $entries);
     $result = _drush_hosts_set_hosts($hosts);
 
     return $result;
@@ -174,36 +171,31 @@ function drush_hosts_remove() {
     }
 
     // Extract our entries
-    $entries = array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
+    $entries =  _drush_hosts_get_entries($hosts);
 
     // Find the IP address
-    foreach ($entries as $count => $line) {
-      if (strpos($line, $ip_addr) !== FALSE) {
-        $ip_line = $count;
+    if ($ip_line = _drush_hosts_get_line_by_ip($entries, $ip_addr)) {
+      // Remove a line or domain
+      if (!$ip_line) {
+        drush_set_error('ERROR: Cannot find IP address ' . $ip_addr . ' in /etc/hosts.');
+        return;
       }
-    }
-
-    // Remove a line or domain
-    if (!isset($ip_line)) {
-      drush_set_error('ERROR: Cannot find IP address ' . $ip_addr . ' in /etc/hosts.');
-      return;
-    }
-    elseif (count($domains) > 0) {
-      foreach ($domains as $domain) {
-        $entries[$ip_line] = str_replace(' ' . $domain, '', $entries[$ip_line]);
+      elseif (count($domains) > 0) {
+        foreach ($domains as $domain) {
+          $entries[$ip_line] = str_replace(' ' . $domain, '', $entries[$ip_line]);
+        }
+        // If there are no domains left on a line, remove it
+        if (trim($entries[$ip_line]) == $ip_addr) {
+          unset($entries[$ip_line]);
+        }
       }
-      // If there are no domains left on a line, remove it
-      if (trim($entries[$ip_line]) == $ip_addr) {
+      else {
         unset($entries[$ip_line]);
       }
     }
-    else {
-      unset($entries[$ip_line]);
-    }
 
     // Write the updated hosts file
-    array_splice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1, $entries);
-
+    $hosts = _drush_hosts_update_hosts_entries($hosts, $entries);
     $result = _drush_hosts_set_hosts($hosts);
 
     return $result;
@@ -244,12 +236,18 @@ function _drush_hosts_get_hosts() {
   return $hosts;
 }
 
+/**
+ * Write to /etc/hosts
+ */
 function _drush_hosts_set_hosts($hosts) {
   $output = implode("\n", $hosts['file']) . "\n";
   $result = file_put_contents('/etc/hosts', $output);
   return $result;
 }
 
+/**
+ * Run the command as root, prompting for a password if required
+ */
 function _drush_hosts_run_as_root($command) {
     $home = getenv('HOME');
     $options_array = drush_redispatch_get_options();
@@ -257,6 +255,32 @@ function _drush_hosts_run_as_root($command) {
     foreach ($options_array as $option => $value) {
       $options_string .= ' --' . $option . '=' . $value;
     }
-    // drush_print(dt('Enter your password for sudo to add entries to your /etc/hosts file.'));
     drush_shell_exec_interactive("sudo env HOME=$home drush " . $command . ' ' . $options_string);
+}
+
+/**
+ * Return just the entries we're managing
+ */
+function _drush_hosts_get_entries($hosts) {
+  return array_slice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1);
+}
+
+
+function _drush_hosts_get_line_by_ip($entries, $ip_addr) {
+  foreach ($entries as $count => $line) {
+    if (strpos($line, $ip_addr) !== FALSE) {
+      $ip_line = $count;
+    }
+  }
+  if (isset($ip_line)) {
+    return $ip_line;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+function _drush_hosts_update_hosts_entries($hosts, $entries) {
+  array_splice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1, $entries);
+  return $hosts;
 }
