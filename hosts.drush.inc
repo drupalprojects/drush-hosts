@@ -97,14 +97,8 @@ function drush_hosts() {
  * Add an entry to /etc/hosts.
  */
 function drush_hosts_add() {
-  if (!($ip_addr = drush_get_option('ip'))) {
-    drush_set_error('ERROR: Could not find an IP address to add. Try specifying one with the "--ip" option, or using a VM alias.');
-    return;
-  }
-  if (!($domains = drush_get_option_list('fqdn')) && !($remove)) {
-    drush_set_error('ERROR: Could not find any domains to add. Try specifing one or more with the "--fqdn" option.');
-    return;
-  }
+  $ip_addr = _drush_hosts_get_valid_ip();
+  $domains = _drush_hosts_get_valid_domains(TRUE);
 
   // This command must be run as root, if not already try to run it through sudo.
   if (posix_getuid() > 0) {
@@ -144,12 +138,8 @@ function drush_hosts_add() {
  * Add an entry to /etc/hosts.
  */
 function drush_hosts_remove() {
-  if (!($ip_addr = drush_get_option('ip'))) {
-    drush_set_error('ERROR: Could not find an IP address to remove. Try specifying one with the "--ip" option, or using a VM alias.');
-    return;
-  }
-
-  $domains = drush_get_option_list('fqdn');
+  $ip_addr = _drush_hosts_get_valid_ip();
+  $domains = _drush_hosts_get_valid_domains();
 
   // This command must be run as root, if not already try to run it through sudo.
   if (posix_getuid() > 0) {
@@ -284,3 +274,49 @@ function _drush_hosts_update_hosts_entries($hosts, $entries) {
   array_splice($hosts['file'], $hosts['begin'] + 1, ($hosts['end'] - $hosts['begin']) - 1, $entries);
   return $hosts;
 }
+
+function _drush_hosts_get_valid_ip() {
+  if (!($ip_addr = drush_get_option('ip'))) {
+    drush_set_error('ERROR: Could not find an IP address. Try specifying one with the "--ip" option, or using a VM alias.');
+    exit(1);
+  }
+
+  if(filter_var($ip_addr, FILTER_VALIDATE_IP)) {
+    // it's valid
+    return $ip_addr;
+  }
+  else {
+    // it's not valid
+    drush_set_error("ERROR: Invalid IP address supplied: $ip_addr");
+    exit(1);
+  }
+
+}
+
+function _drush_hosts_get_valid_domains($required = FALSE) {
+
+  $domains = drush_get_option_list('fqdn');
+
+  if (is_null($domains[0])) {
+    if ($required) {
+      drush_set_error('ERROR: Could not find any domains. Try specifing one or more with the "--fqdn" option.');
+      exit(1);
+    }
+    else {
+      return;
+    }
+  }
+  else {
+    foreach ($domains as $domain) {
+      if(!filter_var('http://' . $domain, FILTER_VALIDATE_URL)) {
+        // it's not valid
+        drush_set_error("ERROR: Invalid FQDN supplied: $domain");
+        exit(1);
+      }
+    }
+    // they're all valid
+    return $domains;
+  }
+
+}
+
