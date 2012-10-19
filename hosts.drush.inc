@@ -241,13 +241,13 @@ function _drush_hosts_set_hosts($hosts) {
  * Run the command as root, prompting for a password if required
  */
 function _drush_hosts_run_as_root($command) {
-    $home = getenv('HOME');
-    $options_array = drush_redispatch_get_options();
-    $options_string = '';
-    foreach ($options_array as $option => $value) {
-      $options_string .= ' --' . $option . '=' . $value;
-    }
-    drush_shell_exec_interactive("sudo env HOME=$home drush " . $command . ' ' . $options_string);
+  $command_path = dirname(dirname(drush_commandfile_list()['hosts']));
+  $options_array = drush_redispatch_get_options();
+  $options_string = '';
+  foreach ($options_array as $option => $value) {
+    $options_string .= '--' . $option . '=' . $value . ' ';
+  }
+  drush_shell_exec_interactive("sudo drush --include=$command_path $command $options_string");
 }
 
 /**
