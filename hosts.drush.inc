@@ -202,28 +202,28 @@ function _drush_hosts_get_hosts() {
 
   $hosts['file'] = file('/etc/hosts', FILE_IGNORE_NEW_LINES);
 
-    // Find markers that delineate our block of entries
-    foreach ($hosts['file'] as $count => $line) {
-      if (strpos($line, HOSTS_BEGIN_MARKER) !== FALSE) {
-        $hosts['begin'] = $count;
-      }
-      if (strpos($line, HOSTS_END_MARKER) !== FALSE) {
-        $hosts['end'] = $count;
-      }
+  // Find markers that delineate our block of entries
+  foreach ($hosts['file'] as $count => $line) {
+    if (strpos($line, HOSTS_BEGIN_MARKER) !== FALSE) {
+      $hosts['begin'] = $count;
     }
-    // Add markers to end of file if none were found
-    if (!isset($hosts['begin']) && !isset($hosts['end'])) {
-      $hosts['begin'] = count($hosts['file']);
-      $hosts['file'][] = HOSTS_BEGIN_MARKER;
-      $hosts['end'] = count($hosts['file']);
-      $hosts['file'][] = HOSTS_END_MARKER;
+    if (strpos($line, HOSTS_END_MARKER) !== FALSE) {
+      $hosts['end'] = $count;
     }
+  }
+  // Add markers to end of file if none were found
+  if (!isset($hosts['begin']) && !isset($hosts['end'])) {
+    $hosts['begin'] = count($hosts['file']);
+    $hosts['file'][] = HOSTS_BEGIN_MARKER;
+    $hosts['end'] = count($hosts['file']);
+    $hosts['file'][] = HOSTS_END_MARKER;
+  }
 
-    // Sanity check
-    if (!($hosts['end'] > $hosts['begin'])) {
-      drush_set_error('ERROR: Error parsing hosts file.');
-      return FALSE;
-    }
+  // Sanity check
+  if (!($hosts['end'] > $hosts['begin'])) {
+    drush_set_error('ERROR: Error parsing hosts file.');
+    return FALSE;
+  }
 
   return $hosts;
 }
