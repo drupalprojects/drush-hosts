@@ -112,18 +112,15 @@ function drush_hosts_add() {
     $entries =  _drush_hosts_get_entries($hosts);
 
     // Find the IP address
-    if ($ip_line = _drush_hosts_get_line_by_ip($entries, $ip_addr)) {
-      // Add an IP address and/or domain
-      if (!$ip_line) {
-        $entries[] = $ip_addr . "   ";
-        $ip_line = count($entries) - 1;
-      }
-      else {
-        // TODO: don't add duplicate domains
-        foreach ($domains as $domain) {
-          $entries[$ip_line] = $entries[$ip_line] . ' ' . $domain;
-        }
-      }
+    $ip_line = _drush_hosts_get_line_by_ip($entries, $ip_addr);
+    // Add an IP address and/or domain
+    if (!$ip_line) {
+      $ip_line = count($entries);
+      $entries[$ip_line] = $ip_addr . "   ";
+    }
+    // TODO: don't add duplicate domains
+    foreach ($domains as $domain) {
+      $entries[$ip_line] = $entries[$ip_line] . ' ' . $domain;
     }
     // Write the updated hosts file
     $hosts = _drush_hosts_update_hosts_entries($hosts, $entries);
@@ -164,24 +161,29 @@ function drush_hosts_remove() {
     $entries =  _drush_hosts_get_entries($hosts);
 
     // Find the IP address
-    if ($ip_line = _drush_hosts_get_line_by_ip($entries, $ip_addr)) {
-      // Remove a line or domain
-      if (!$ip_line) {
-        drush_set_error('ERROR: Cannot find IP address ' . $ip_addr . ' in /etc/hosts.');
-        return;
-      }
-      elseif (count($domains) > 0) {
-        foreach ($domains as $domain) {
+    $ip_line = _drush_hosts_get_line_by_ip($entries, $ip_addr);
+    // Remove a line or domain
+    if (!$ip_line) {
+      drush_set_error('ERROR: Cannot find IP address ' . $ip_addr . ' in /etc/hosts.');
+      return;
+    }
+    elseif (count($domains) > 0) {
+      foreach ($domains as $domain) {
+        if (strpos($entries[$ip_line], $domain) !== FALSE) {
           $entries[$ip_line] = str_replace(' ' . $domain, '', $entries[$ip_line]);
         }
-        // If there are no domains left on a line, remove it
-        if (trim($entries[$ip_line]) == $ip_addr) {
-          unset($entries[$ip_line]);
+        else {
+          drush_set_error('ERROR: Cannot find FQDN "' . $domain . '" in /etc/hosts at the line for ' . $ip_addr . '.');
+          return;
         }
       }
-      else {
+      // If there are no domains left on a line, remove it
+      if (trim($entries[$ip_line]) == $ip_addr) {
         unset($entries[$ip_line]);
       }
+    }
+    else {
+      unset($entries[$ip_line]);
     }
 
     // Write the updated hosts file
@@ -259,15 +261,10 @@ function _drush_hosts_get_entries($hosts) {
 function _drush_hosts_get_line_by_ip($entries, $ip_addr) {
   foreach ($entries as $count => $line) {
     if (strpos($line, $ip_addr) !== FALSE) {
-      $ip_line = $count;
+      return $count;
     }
   }
-  if (isset($ip_line)) {
-    return $ip_line;
-  }
-  else {
-    return FALSE;
-  }
+  return FALSE;
 }
 
 function _drush_hosts_update_hosts_entries($hosts, $entries) {
