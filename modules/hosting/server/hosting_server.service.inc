@@ -59,7 +59,7 @@ class hostingService {
   }
 
   public function default_data_dir() {
-    return '[platform_root]/sites/[uri]';
+    return '';
   }
 
   public function insert() {

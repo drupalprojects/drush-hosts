@@ -14,8 +14,7 @@ class hostingService_http_public extends hostingService_http {
   }
 
   function default_data_dir() {
-    //TODO: provide default tokenized path
-    return '';
+    return '[platform_root]/sites/[uri]';
     }
 
   function update() {

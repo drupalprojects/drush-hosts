@@ -96,7 +96,6 @@ function hosting_server_schema() {
       'data_dir' => array(
         'type' => 'text',
         'size' => 'big',
-        'default' => '',
         'not null' => TRUE,
       ),
     ),
