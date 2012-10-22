@@ -219,7 +219,7 @@ function hosting_server_update_6005() {
 /**
  * Add a new field to support symlinking site directories.
  */
-function hosting_server_update_6006() {
+function hosting_server_update_6200() {
   $ret = array();
   db_add_field($ret, 'hosting_service', 'data_dir',array(
     'type' => 'text',
