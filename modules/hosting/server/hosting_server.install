@@ -224,7 +224,7 @@ function hosting_server_update_6200() {
   db_add_field($ret, 'hosting_service', 'data_dir',array(
     'type' => 'text',
     'size' => 'big',
-    'default' => '',
+    'default' => '[platform_root]/sites/[uri]',
     'not null' => TRUE,
   ));
   return $ret;
