@@ -126,12 +126,12 @@ class hostingService {
         '#default_value' => ($this->data_dir) ? $this->data_dir : $this->default_data_dir(),
       '#description' => t("The directory in which to install sites. Defaults to: '[platform_root]/sites/[uri]'.<br />
         Available tokens include:<br />
-         [uri]           => Name of the site (e.g, www.example.com)<br />
-         [platform_root] => Path to platforms (e.g., /var/aegir/platforms)<br />
-         [platform_path] => Path to the platform (e.g., /var/aegir/platforms/drupal-7.15)<br />
-         [client_name]   => Name of the client (e.g., 'admin')<br />
-         [aegir_root]    => Root of the Aegir install (e.g., /var/aegir)<br />
-         [clients_path]  => Path to clients directory (e.g., /var/aegir/clients)<br />
+         &nbsp;&nbsp;[uri]           => Name of the site (e.g, www.example.com)<br />
+         &nbsp;&nbsp;[platform_root] => Path to platforms (e.g., /var/aegir/platforms)<br />
+         &nbsp;&nbsp;[platform_path] => Path to the platform (e.g., /var/aegir/platforms/drupal-7.15)<br />
+         &nbsp;&nbsp;[client_name]   => Name of the client (e.g., 'admin')<br />
+         &nbsp;&nbsp;[aegir_root]    => Root of the Aegir install (e.g., /var/aegir)<br />
+         &nbsp;&nbsp;[clients_path]  => Path to clients directory (e.g., /var/aegir/clients)<br />
         "),
         '#maxlength' => 255,
       );
