@@ -7,13 +7,14 @@ class hostingService_http extends hostingService {
 
 class hostingService_http_public extends hostingService_http {
   protected $has_port = TRUE;
-  protected $has_site_symlinks = TRUE;
+  protected $has_data_dir = TRUE;
 
   function default_port() {
     return 80;
   }
 
-  function default_site_symlinks() {
+  function default_data_dir() {
+    //TODO: provide default tokenized path
     return '';
     }
 

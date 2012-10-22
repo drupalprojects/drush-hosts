@@ -93,7 +93,7 @@ function hosting_server_schema() {
         'not null' => TRUE,
         'default' => 1,
       ),
-      'site_symlinks' => array(
+      'data_dir' => array(
         'type' => 'text',
         'size' => 'big',
         'default' => '',
@@ -221,7 +221,7 @@ function hosting_server_update_6005() {
  */
 function hosting_server_update_6006() {
   $ret = array();
-  db_add_field($ret, 'hosting_service', 'site_symlinks',array(
+  db_add_field($ret, 'hosting_service', 'data_dir',array(
     'type' => 'text',
     'size' => 'big',
     'default' => '',
