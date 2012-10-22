@@ -59,7 +59,7 @@ class hostingService {
   }
 
   public function default_data_dir() {
-    return '';
+    return '[platform_root]/sites/[uri]';
   }
 
   public function insert() {
@@ -120,11 +120,19 @@ class hostingService {
     if ($this->has_data_dir) {
       $form['data_dir'] = array(
         '#type' => 'textfield',
-        '#title' => t('Data directory.'),
+        '#title' => t('Data directory'),
         '#required' => FALSE,
         '#size' => 40,
         '#default_value' => ($this->data_dir) ? $this->data_dir : $this->default_data_dir(),
-        '#description' => t("The directory in which to install sites."),
+      '#description' => t("The directory in which to install sites. Defaults to: '[platform_root]/sites/[uri]'.<br />
+        Available tokens include:<br />
+         [uri]           => Name of the site (e.g, www.example.com)<br />
+         [platform_root] => Path to platforms (e.g., /var/aegir/platforms)<br />
+         [platform_path] => Path to the platform (e.g., /var/aegir/platforms/drupal-7.15)<br />
+         [client_name]   => Name of the client (e.g., 'admin')<br />
+         [aegir_root]    => Root of the Aegir install (e.g., /var/aegir)<br />
+         [clients_path]  => Path to clients directory (e.g., /var/aegir/clients)<br />
+        "),
         '#maxlength' => 255,
       );
     }
