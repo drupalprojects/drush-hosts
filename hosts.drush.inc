@@ -162,11 +162,11 @@ function drush_hosts_remove() {
 
     // Find the IP address
     $ip_line = _drush_hosts_get_line_by_ip($entries, $ip_addr);
-    // Remove a line or domain
-    if (!$ip_line) {
+    if ($ip_line === FALSE) {
       drush_set_error('ERROR: Cannot find IP address ' . $ip_addr . ' in /etc/hosts.');
       return;
     }
+    // Remove a line or domain
     elseif (count($domains) > 0) {
       foreach ($domains as $domain) {
         if (strpos($entries[$ip_line], $domain) !== FALSE) {
