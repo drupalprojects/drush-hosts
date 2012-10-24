@@ -80,6 +80,7 @@ function hostmaster_bootstrap() {
   hosting_services_add($node, 'http', $master_server->http_service_type, array(
    'restart_cmd' => $master_server->http_restart_cmd,
    'port' => 80,
+   'data_dir' => '[platform_root]/sites/[uri]'
    'available' => 1,
   ));
 
