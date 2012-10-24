@@ -118,6 +118,7 @@ class hostingService {
     }
 
     if ($this->has_data_dir) {
+      // TODO: validate the existence of the [uri] token.
       $form['data_dir'] = array(
         '#type' => 'textfield',
         '#title' => t('Data directory'),
@@ -125,13 +126,16 @@ class hostingService {
         '#size' => 40,
         '#default_value' => ($this->data_dir) ? $this->data_dir : $this->default_data_dir(),
       '#description' => t("The directory in which to install sites. Defaults to: '[platform_root]/sites/[uri]'.<br />
+        <br />
         Available tokens include:<br />
-         &nbsp;&nbsp;[uri]           => Name of the site (e.g, www.example.com)<br />
+         &nbsp;&nbsp;[uri]           => (Required) Name of the site (e.g, www.example.com)<br />
          &nbsp;&nbsp;[platform_root] => Path to platforms (e.g., /var/aegir/platforms)<br />
          &nbsp;&nbsp;[platform_path] => Path to the platform (e.g., /var/aegir/platforms/drupal-7.15)<br />
          &nbsp;&nbsp;[client_name]   => Name of the client (e.g., 'admin')<br />
          &nbsp;&nbsp;[aegir_root]    => Root of the Aegir install (e.g., /var/aegir)<br />
          &nbsp;&nbsp;[clients_path]  => Path to clients directory (e.g., /var/aegir/clients)<br />
+        <br />
+        <strong>N.B. This path has to be readable by the web-server, or executable by all.</strong> If you see install.php on a site installed after making a change to this setting, verify these settings in the filesystem. 
         "),
         '#maxlength' => 255,
       );
