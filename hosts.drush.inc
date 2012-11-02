@@ -241,7 +241,8 @@ function _drush_hosts_set_hosts($hosts) {
  * Run the command as root, prompting for a password if required
  */
 function _drush_hosts_run_as_root($command) {
-  $command_path = dirname(dirname(drush_commandfile_list()['hosts']));
+  $commandfile_list = drush_commandfile_list();
+  $command_path = dirname(dirname($commandfile_list['hosts']));
   $options_array = drush_redispatch_get_options();
   $options_string = '';
   foreach ($options_array as $option => $value) {
