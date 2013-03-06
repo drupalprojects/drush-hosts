@@ -197,7 +197,13 @@ function hosting_platform_form(&$node) {
     '#default_value' => $node->title,
     '#maxlength' => 255,
   );
-  if (!$node->nid) {
+
+  // allow edition if the node is in creation, or if wasn't verified correctly
+  // *and* we're not using a makefile. The reason while we don't allow editing
+  // the path if the makefile was specified is that there's the possibility
+  // that the platform path was actually created when the node was saved the
+  // first time and we have cruft lying around to cleanup.
+  if (!$node->nid || (!$node->verified && !$node->makefile)) {
     $form['publish_path'] = array(
       '#type' => 'textfield',
       '#title' => t('Publish path'),
@@ -371,6 +377,9 @@ function hosting_platform_validate($node, &$form) {
   if ($node->op != t('Delete') && $result = db_fetch_object(db_query("SELECT n.title AS name FROM {hosting_platform} AS h INNER JOIN {node} AS n ON n.nid = h.nid WHERE publish_path = '%s' AND n.nid <> %d AND h.status >= %d", hosting_path_normalize($node->publish_path), $node->nid, HOSTING_PLATFORM_QUEUED))) {
     form_set_error('publish_path', t('Path is already in use by platform %name. Platform paths must be unique across all servers.', array('%name' => $result->name)));
   }
+  if (is_null($node->web_server)) {
+    form_set_error('web_server', t('Platform needs to be associated with a webserver. Make sure you have a verified webserver on this Aegir install!'));
+  }
 }
 
 /**
@@ -488,6 +497,13 @@ function hosting_platform_view($node, $teaser = FALSE, $page = FALSE) {
     }
   }
   return $node;
+}
+
+/**
+ * Implements hook_hosting_site_site_list_filters().
+ */
+function hosting_platform_hosting_site_site_list_filters() {
+  return array('platform');
 }
 
 function _hosting_platform_status($node) {

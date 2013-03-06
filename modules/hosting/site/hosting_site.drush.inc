@@ -80,7 +80,6 @@ function hosting_site_post_hosting_install_task($task, $data) {
     hosting_package_sync($packages);
     hosting_package_instance_sync($task->ref->nid, $packages);
     $task->ref->site_status = HOSTING_SITE_ENABLED;
-    $task->ref->ip_addresses = array_values($data['context']['site_ip_addresses']);
     $task->ref->no_verify = TRUE;
     $task->ref->verified = time();
     if ($context['cron_key']) {
@@ -184,8 +183,7 @@ function hosting_site_post_hosting_backup_task($task, $data) {
 function hosting_site_post_hosting_import_task($task, $data) {
   hosting_import_site($task->ref->nid, $data['context'], $task->ref->platform);
   
-  $context = $data['context'];
-  $packages = $context['packages'];
+  $packages = $data['context']['packages'];
   hosting_package_sync($packages);
   hosting_package_instance_sync($task->ref->nid, $packages);
 
@@ -195,7 +193,6 @@ function hosting_site_post_hosting_verify_task($task, $data) {
   if ($task->ref->type == 'site') {
     $task->ref->verified = time();
     $task->ref->no_verify = TRUE;
-    $task->ref->ip_addresses = array_values($data['context']['site_ip_addresses']);
     if ($data['context']['cron_key']) {
       $task->ref->cron_key = $data['context']['cron_key'];
     }

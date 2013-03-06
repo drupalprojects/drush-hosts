@@ -67,6 +67,7 @@ function hosting_task_menu() {
 function hosting_task_ajax_list($node) {
   $return['markup'] = hosting_task_table($node);
   $return['changed'] = $node->changed;
+  $return['navigate_url'] = url('node/' . $node->nid);
   drupal_json($return);
   exit();
 }
@@ -518,7 +519,7 @@ function hosting_tasks_queue($count = 20) {
   drush_log(dt("Running tasks queue"));
   $tasks = _hosting_get_new_tasks($count);
   foreach ($tasks as $task) {
-    drush_invoke_process('@self', "hosting-task", array($task->nid), array(), array('fork' => TRUE));
+    drush_invoke_process('@self', "hosting-task", array($task->nid), array('invoke' => TRUE), array('fork' => TRUE));
   }
 }
 
@@ -555,25 +556,44 @@ function hosting_task_count_running() {
 }
 
 /**
- * User-driven task descriptions
+ * Get a list of tasks that can be invoked by the user.
  *
- * This is the list of tasks that can be invoked by the user. This doesn't
- * check permissions or relevance of the tasks.
+ * Note this does not check permissions or relevance of the tasks.
  *
- * Modules can extend this list using hook_hosting_tasks()
+ * Modules can extend this list using hook_hosting_tasks().
+ *
+ * @param $type
+ *   Tasks are grouped by the type of thing that the task is performed on. This
+ *   parameter should either be NULL, or a string indicating the type of thing
+ *   that you want possible tasks to operate on.
+ * @param $reset
+ *   This function has an internal static cache, to reset the cache, pass in
+ *   TRUE.
+ *
+ * @return
+ *   Depending on the value of the $type parameter, you will either be returned:
+ *   - If $type is NULL: an associative array whose keys are things that can be
+ *     acted upon by the tasks defined in the corresponding values.
+ *   - If $type is a string, then an associative array whose keys are task types
+ *     and whose values are definitions for those tasks.
  *
  * @see hook_hosting_tasks()
+ * @see hook_hosting_tasks_alter()
  * @see hosting_task_menu_access()
  */
-function hosting_available_tasks($type, $reset = FALSE) {
+function hosting_available_tasks($type = NULL, $reset = FALSE) {
   static $cache = array();
 
   if (!sizeof($cache) || $reset) {
     $cache = module_invoke_all('hosting_tasks');
     drupal_alter('hosting_tasks', $cache);
   }
-  return $cache[$type];
-
+  if (isset($type)) {
+    return $cache[$type];
+  }
+  else {
+    return $cache;
+  }
 }
 
 /**
@@ -770,8 +790,8 @@ function _hosting_task_log_table($vid) {
         $message = $summary . "<span class='hosting-task-full'>" . filter_xss($entry->message) . '</span>';
       }
       else {
-        $message = $entry->message;
-      } 
+        $message = filter_xss($entry->message);
+      }
       $row =  array(array('data' => $message, 'class' => 'hosting-status'));
       $rows[] = array('data' => $row, 'class' => _hosting_task_log_class($entry->type));
     }
@@ -897,7 +917,14 @@ define('HOSTING_TASK_SUCCESS', 1);
 define('HOSTING_TASK_ERROR', 2);
 
 /**
- * @} End of "name Error status defintions".
+ * The command was completed successfully, but with warnings. This is requires
+ * attention.
+ */
+define('HOSTING_TASK_WARNING', 3);
+
+
+/**
+ * @} End of "name Error status definitions".
  */
 
 /**
@@ -909,6 +936,7 @@ function _hosting_parse_error_code($code) {
     HOSTING_TASK_QUEUED => t('Queued'),
     HOSTING_TASK_ERROR => t('Failed'),
     HOSTING_TASK_PROCESSING => t('Processing'),
+    HOSTING_TASK_WARNING => t('Warning'),
   );
   return $messages[$code];
 }
@@ -1028,12 +1056,12 @@ function hosting_task_table($node) {
     else {
       $actions['run'] = _hosting_task_button(t('Run'), sprintf("node/%d/%s_%s", $node->nid, $node->type, $task), $info['description'], 'hosting-button-run', $info['task_permitted'], $info['dialog']);
     }
-     
-    $actions['log'] = _hosting_task_button(t('View'), 'node/' . $info['nid'], t("Display the task log"), 'hosting-button-log', isset($info['nid']) &&  user_access('access task logs'), TRUE, FALSE);
-     $row['actions'] = array(
-        'data' => implode('', $actions),
-       'class' => 'hosting-actions'
-     );
+
+    $actions['log'] = _hosting_task_button(t('View'), isset($info['nid'])? 'node/' . $info['nid']: '<front>', t("Display the task log"), 'hosting-button-log', isset($info['nid']) &&  user_access('access task logs'), TRUE, FALSE);
+    $row['actions'] = array(
+      'data' => implode('', $actions),
+      'class' => 'hosting-actions'
+    );
 
     $rows[] = array('data' => $row, 'class' => $info['class']);
   }
@@ -1152,8 +1180,18 @@ function hosting_task_fetch_tasks($rid) {
     $task = array_merge($return[$type], $hook_task);
 
     $allowed = (isset($task['exists']) && !in_array($task['task_status'], array(HOSTING_TASK_QUEUED, HOSTING_TASK_PROCESSING))) || !isset($task['exists']);
-    if ($allowed && !$task['hidden'] && $access_callback($node, $type)) {
+    if ($allowed && empty($task['hidden']) && $access_callback($node, $type)) {
       $task['task_permitted'] = TRUE;
+    }
+    else {
+      $task['task_permitted'] = FALSE;
+    }
+    // @TODO: Use task defaults array to prevent notices.
+    if (!isset($task['dialog'])) {
+      $task['dialog'] = FALSE;
+    }
+    if (!isset($task['task_status'])) {
+      $task['task_status'] = NULL;
     }
     $task['class'] = hosting_task_status_class($task['task_status']);
 
@@ -1178,6 +1216,9 @@ function hosting_task_status_class($status = null) {
         break;
       case HOSTING_TASK_PROCESSING :
         $class = 'hosting-processing';
+        break;
+      case HOSTING_TASK_WARNING :
+        $class = 'hosting-warning';
         break;
     }
   }
