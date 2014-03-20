@@ -20,8 +20,12 @@ projects[views][version] = "3.7"
 projects[ctools][version] = "1.3"
 projects[views_bulk_operations][version] = "3.2"
 projects[entity][version] = "1.3"
+projects[js][version] = "1.0"
 
-; These are contrib modules, but come under the Aegir 'umbrella' of control.
-;projects[hosting_platform_pathauto][version] = "2.0-beta2"
-projects[eldir][version] = "3.x"
-projects[hosting][version] = "3.x"
+; Drop the js.php file from the 'High-performance JavaScript callback handler'
+; project to the platform root. See: http://drupal.org/project/js
+libraries[js][download][type] = "file"
+libraries[js][download][url] = "http://drupalcode.org/project/js.git/blob_plain/HEAD:/js.php"
+;libraries[js][download][url] = "http://drupalcode.org/project/js.git/blob/refs/tags/7.x-1.0:/js.php"
+libraries[js][download][filename] = "../../../../js.php"
+
