@@ -33,6 +33,7 @@ dependencies[] = overlay_paths
 dependencies[] = views
 dependencies[] = views_bulk_operations
 dependencies[] = actions_permissions
+dependencies[] = js
 
 ;; Aegir contrib ;;
 ;dependencies[] = hosting_platform_pathauto
