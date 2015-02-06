@@ -18,6 +18,7 @@ projects[eldir][download][branch] = 7.x-3.x
 
 projects[hosting][download][type] = git
 projects[hosting][download][branch] = 7.x-3.x
+projects[hosting][download][revision] = f70f951225
 
 
 
